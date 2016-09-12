@@ -5,8 +5,6 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#define FREE(p) do{if(p)free(p); p =NULL;}while(0);
-
 void log_debug(const char *fmt, ...);
 
 void logInfo(const char *fmt, ...);

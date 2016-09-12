@@ -7,7 +7,7 @@ set(SOURCE_FILES server.c reactor.h reactor.c time_event.h
         time_event.c net.h net.c util.h util.c
         parse_http.h parse_http.c
         3rd/http_parser/http_parser.h 3rd/http_parser/http_parser.c
-        session_manager.h session_manager.c hashmap.h hashmap.c)
+        session.h session.c hashmap.h hashmap.c memory.h memory.c)
 add_executable(sc ${SOURCE_FILES} reactor.h reactor.c time_event.h time_event.c
         net.h net.c util.h util.c parse_http.h parse_http.c
-        session_manager.h session_manager.c hashmap.h hashmap.c)
+        session.h session.c hashmap.h hashmap.c memory.h memory.c)

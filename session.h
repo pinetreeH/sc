@@ -15,7 +15,7 @@ typedef struct client_info {
     char write_buf[CLIENT_BUF_MAX];
 } clientInfo;
 
-int session_manager_init(int sid_max);
+int session_init(int sid_max);
 
 struct client_info *get_clientinfo_by_sid(char *sid);
 

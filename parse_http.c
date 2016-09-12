@@ -2,7 +2,7 @@
 // Created by pinetree on 16-9-9.
 //
 
-#include "session_manager.h"
+#include "session.h"
 #include "util.h"
 #include "3rd/http_parser/http_parser.h"
 //#include <regex.h>

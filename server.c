@@ -1,7 +1,7 @@
 #include "reactor.h"
 #include "net.h"
 #include "parse_http.h"
-#include "session_manager.h"
+#include "session.h"
 #include "util.h"
 #include <stdlib.h>
 
@@ -20,7 +20,7 @@ int main(int argc, char **args) {
                           NULL, "handle_tcp_accpet");
 
     http_parse_setting_init();
-    session_manager_init(10);
+    session_init(10);
     reactor_run(base);
 
     return EXIT_SUCCESS;

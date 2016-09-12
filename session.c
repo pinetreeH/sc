@@ -2,24 +2,24 @@
 // Created by pinetree on 16-9-10.
 //
 
-#include "session_manager.h"
+#include "session.h"
 #include "hashmap.h"
 #include "util.h"
 #include <stdlib.h>
 
-struct session_manager {
+struct session {
     int capacity;
     int sid_cnt;
     struct hashmap *sid_to_client;
     struct hashmap *fd_to_client;
 };
 
-static struct session_manager sessions;
+static struct session sessions;
 
-int session_manager_init(int sid_max) {
+int session_init(int sid_max) {
     sessions.capacity = sid_max;
     sessions.sid_cnt = 0;
-    sessions.fd_to_client = hashmap_init(sid_max, HASHMAP_KEYTYPE_INT);
+    sessions.fd_to_client = hashmap_init(sid_max, hash);
     if (!sessions.fd_to_client)
         return -1;
     sessions.sid_to_client = hashmap_init(sid_max, HASHMAP_KEYTYPE_STR);

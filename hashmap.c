@@ -4,6 +4,7 @@
 
 #include "hashmap.h"
 #include "util.h"
+#include "memory.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -78,9 +79,11 @@ uint64_t crc32(const unsigned char *s, unsigned int len) {
     return crc32val;
 }
 
-static uint32_t get_strkey_hash_index(int map_capacity, const char *keystr) {
+int hashmap_strkey_hashindex(int map_capacity, void *k) {
+    hashmap_key *hkey = (hashmap_key *) k;
 
-    uint64_t key = crc32((unsigned char *) (keystr), strlen(keystr));
+    uint64_t key = crc32((unsigned char *) (hkey->void_key),
+                         strlen(hkey->void_key));
 
     /* Robert Jenkins' 32 bit Mix Function */
     key += (key << 12);
@@ -97,41 +100,50 @@ static uint32_t get_strkey_hash_index(int map_capacity, const char *keystr) {
     return key / map_capacity;
 }
 
-static uint32_t get_intkey_hash_index(int map_capacity, uint64_t key) {
-    return key / map_capacity;
+int hashmap_intkey_hashindex(int map_capacity, void *k) {
+    hashmap_key *hkey = (hashmap_key *) k;
+    return hkey->uint64_t_key / map_capacity;
 }
 
-static inline int need_rehash(struct hashmap *map) {
+int hashmap_strkey_cmp(void *key1, void *key2){
+    hashmap_key * k1 = (hashmap_key*)key1;
+    hashmap_key *k2 = (hashmap_key*)key2;
+    return strcmp((char*)k1->void_key,(char*)k2->void_key);
+}
+
+int hashmap_intkey_cmp(void *key1, void *key2){
+    hashmap_key * k1 = (hashmap_key*)key1;
+    hashmap_key *k2 = (hashmap_key*)key2;
+    return k1->uint64_t_key == k2->uint64_t_key;
+}
+
+static inline int need_rehash(hashmap *map) {
     return map->size >= map->capacity / 2;
 }
 
-static inline int element_space_used(struct hashmap_element *e) {
+static inline int element_space_used(hashmap_element *e) {
     return e->value != NULL;
 }
 
-static int get_hash_index(struct hashmap *map, hashmap_key key) {
+static int get_hash_index(hashmap *map, hashmap_key key) {
     int idx = -1;
-    if (map) {
-        if (map->key_type == HASHMAP_KEYTYPE_STR) {
-            idx = get_strkey_hash_index(map->capacity, key.str_key);
-        } else {
-            idx = get_intkey_hash_index(map->capacity, key.uint64_t_key);
-        }
-    }
+    if (map && map->key_index_fn)
+        map->key_index_fn(map->capacity, (void *) &key);
+
     return idx;
 }
 
-static int rehash(struct hashmap *map) {
+static int rehash(hashmap *map) {
     if (!map)
         return HASHMAP_ERR;
 
     int new_capacity = 2 * map->capacity;
-    struct hashmap_element *new_element_space = (struct hashmap_element *)
-            calloc(new_capacity, sizeof(struct hashmap_element));
+    hashmap_element *new_element_space = (hashmap_element *)
+            mem_calloc(new_capacity, sizeof(hashmap_element));
     if (!new_element_space)
         return HASHMAP_OUT_OF_MEMORY;
 
-    struct hashmap_element *pre_element_space = map->elements;
+    hashmap_element *pre_element_space = map->elements;
     int pre_size = map->size;
     map->elements = new_element_space;
     map->capacity = new_capacity;
@@ -145,23 +157,27 @@ static int rehash(struct hashmap *map) {
                 return ret;
         }
     }
-    FREE(pre_element_space);
+    mem_free(pre_element_space);
     return HASHMAP_OK;
 }
 
-static int find_empty_space(struct hashmap *map, hashmap_key key, void *value,
+static int find_empty_space(hashmap *map, hashmap_key key, void *value,
                             int *final_idx) {
     int idx = get_hash_index(map, key);
     for (int i = 0; i < MAX_CHAIN_LENGTH; i++) {
-        if (element_space_used(&map->elements[idx + i])) {
+        hashmap_element *e = &map->elements[idx + i];
+        if (element_space_used(e)) {
             *final_idx = idx + i;
             return HASHMAP_OK;
         }
+
+        if (map->key_cmp_fn(&key, &e->key) == 0)
+            return HASHMAP_OK;
     }
     return HASHMAP_ELEMENT_FULL;
 }
 
-static int get_value(struct hashmap *map, hashmap_key key, void *value,
+static int get_value(hashmap *map, hashmap_key key, void *value,
                      int *element_idx) {
     if (!map)
         return HASHMAP_ERR;
@@ -169,14 +185,11 @@ static int get_value(struct hashmap *map, hashmap_key key, void *value,
     int idx = -1;
     idx = get_hash_index(map, key);
     for (int i = 0; i < MAX_CHAIN_LENGTH; i++) {
-        struct hashmap_element *e = &map->elements[idx + i];
+        hashmap_element *e = &map->elements[idx + i];
         if (!element_space_used(e)) {
             continue;
         }
-        if ((map->key_type == HASHMAP_KEYTYPE_INT &&
-             e->key.uint64_t_key == key.uint64_t_key) ||
-            (map->key_type == HASHMAP_KEYTYPE_STR &&
-             strcmp(e->key.str_key, key.str_key) == 0)) {
+        if (map->key_cmp_fn(&key, e) == 0) {
             if (value)
                 value = e->value;
             if (element_idx)
@@ -188,27 +201,38 @@ static int get_value(struct hashmap *map, hashmap_key key, void *value,
 }
 
 
-struct hashmap *hashmap_init(int capacity, int key_type) {
-    struct hashmap *map = malloc(sizeof(struct hashmap));
+hashmap *hashmap_init(int capacity,
+                      hashmap_key_cmp *key_cmp_fn,
+                      hashmap_value_cmp *value_cmp_fn,
+                      hashmap_free_key *free_key_fn,
+                      hashmap_free_value *free_value_fn,
+                      hashmap_key_index *key_index_fn) {
+    hashmap *map = mem_malloc(sizeof(hashmap));
     if (map) {
         int hashmap_capacity = (capacity >= HASHMAP_DEFAULT_CAPACITY ?
                                 capacity : HASHMAP_DEFAULT_CAPACITY);
-        map->elements = (struct hashmap_element *)
-                calloc(hashmap_capacity, sizeof(struct hashmap_element));
+        map->elements = (hashmap_element *)
+                mem_calloc(hashmap_capacity, sizeof(hashmap_element));
         if (map->elements) {
             map->capacity = hashmap_capacity;
             map->size = 0;
-            map->key_type = key_type;
+            map->key_cmp_fn = key_cmp_fn;
+            map->value_cmp_fn = value_cmp_fn;
+            map->free_key_fn = free_key_fn;
+            map->free_value_fn = free_value_fn;
+            map->key_index_fn = key_index_fn;
         } else {
-            FREE(map);
+            mem_free(map);
         }
     }
     return map;
 }
 
-int hashmap_set(struct hashmap *map, hashmap_key key, void *value) {
+int hashmap_set(hashmap *map, void *k, void *value) {
     if (!map)
         return HASHMAP_ERR;
+
+    hashmap_key *key = (hashmap_key*)k;
 
     int idx = -1;
     if (need_rehash(map) ||
@@ -226,11 +250,11 @@ int hashmap_set(struct hashmap *map, hashmap_key key, void *value) {
     return HASHMAP_OK;
 }
 
-int hashmap_get(struct hashmap *map, hashmap_key key, void *value) {
+int hashmap_get( hashmap *map, hashmap_key key, void *value) {
     return get_value(map, key, value, NULL);
 }
 
-int hashmap_delete(struct hashmap *map, hashmap_key key,
+int hashmap_delete( hashmap *map, void* key,
                    int free_key, int free_value) {
     if (!map)
         return HASHMAP_ERR;
@@ -239,23 +263,36 @@ int hashmap_delete(struct hashmap *map, hashmap_key key,
     int idx = -1;
     ret = get_value(map, key, NULL, &idx);
     if (ret == HASHMAP_OK) {
-        struct hashmap_element *e = &map->elements[idx];
-        if (map->key_type == HASHMAP_KEYTYPE_STR) {
-            if (free_key)
-                FREE(e->key.str_key);
-            e->key.str_key = NULL;
-        } else {
-            e->key.uint64_t_key = 0;
-        }
-        if (free_value)
-            FREE(e->value);
-        e->value = NULL;
+         hashmap_element *e = &map->elements[idx];
+        if (free_key && map->free_key_fn)
+            map->free_key_fn(&e->key);
+        if (free_value && map->free_value_fn)
+            map->free_value_fn(&e->value);
+
         map->size--;
     }
     return ret;
 }
 
-int hashmap_free(struct hashmap *map, int free_key, int free_value) {
-    FREE(map->elements);
-    FREE(map);
+int hashmap_free( hashmap *map, int free_key, int free_value) {
+    if (!map)
+        return HASHMAP_ERR;
+
+    if ((!free_key && !free_value) || map->size == 0) {
+        mem_free(map->elements);
+    } else {
+        for (int i = 0; i < map->capacity; i++) {
+            hashmap_element *e = &map->elements[i];
+            if (!element_space_used(e))
+                continue;
+
+            if (free_key)
+                map->free_key_fn(&e->key);
+            if (free_value)
+                map->free_value_fn(&e->value);
+        }
+    }
+
+    mem_free(map);
+    return HASHMAP_OK;
 }
