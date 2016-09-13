@@ -4,7 +4,8 @@
 
 #include "reactor.h"
 #include "util.h"
-#include "time_event.h"
+#include "memory.h"
+#include "timeoutevent.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,7 +18,7 @@ struct reactor_base *reactor_base_init(int capacity) {
         }
         base->net_events = malloc(sizeof(struct reactor_net_event) * capacity);
         if (!base->net_events) {
-            FREE(base);
+            mem_free(base);
             break;
         }
         base->maxfd = -1;
@@ -25,14 +26,14 @@ struct reactor_base *reactor_base_init(int capacity) {
         base->stop = 0;
         base->epfd = epoll_create(1024);
         if (base->epfd <= 0) {
-            FREE(base->net_events);
-            FREE(base);
+            mem_free(base->net_events);
+            mem_free(base);
             break;
         }
         base->ep_events = malloc(sizeof(struct epoll_event) * capacity);
         if (!base->ep_events) {
-            FREE(base->net_events);
-            FREE(base);
+            mem_free(base->net_events);
+            mem_free(base);
             break;
         }
     } while (0);
@@ -42,9 +43,9 @@ struct reactor_base *reactor_base_init(int capacity) {
 void reactor_base_delete(struct reactor_base *base) {
     if (!base)
         return;
-    FREE(base->net_events);
-    FREE(base->ep_events);
-    FREE(base);
+    mem_free(base->net_events);
+    mem_free(base->ep_events);
+    mem_free(base);
 }
 
 void reactor_stop(struct reactor_base *base) {
@@ -186,5 +187,6 @@ void reactor_run(struct reactor_base *base) {
     }
     while (!base->stop) {
         reactor_process_net_event(base);
+        // process timeout event
     }
 }

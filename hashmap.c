@@ -97,23 +97,23 @@ int hashmap_strkey_hashindex(int map_capacity, void *k) {
 
     /* Knuth's Multiplicative Method */
     key = (key >> 3) * 2654435761;
-    return key / map_capacity;
+    return key % map_capacity;
 }
 
 int hashmap_intkey_hashindex(int map_capacity, void *k) {
     hashmap_key *hkey = (hashmap_key *) k;
-    return hkey->uint64_t_key / map_capacity;
+    return hkey->uint64_t_key % map_capacity;
 }
 
-int hashmap_strkey_cmp(void *key1, void *key2){
-    hashmap_key * k1 = (hashmap_key*)key1;
-    hashmap_key *k2 = (hashmap_key*)key2;
-    return strcmp((char*)k1->void_key,(char*)k2->void_key);
+int hashmap_strkey_cmp(void *key1, void *key2) {
+    hashmap_key *k1 = (hashmap_key *) key1;
+    hashmap_key *k2 = (hashmap_key *) key2;
+    return strcmp((char *) k1->void_key, (char *) k2->void_key);
 }
 
-int hashmap_intkey_cmp(void *key1, void *key2){
-    hashmap_key * k1 = (hashmap_key*)key1;
-    hashmap_key *k2 = (hashmap_key*)key2;
+int hashmap_intkey_cmp(void *key1, void *key2) {
+    hashmap_key *k1 = (hashmap_key *) key1;
+    hashmap_key *k2 = (hashmap_key *) key2;
     return k1->uint64_t_key == k2->uint64_t_key;
 }
 
@@ -125,10 +125,10 @@ static inline int element_space_used(hashmap_element *e) {
     return e->value != NULL;
 }
 
-static int get_hash_index(hashmap *map, hashmap_key key) {
+static int get_hash_index(hashmap *map, hashmap_key *key) {
     int idx = -1;
     if (map && map->key_index_fn)
-        map->key_index_fn(map->capacity, (void *) &key);
+        idx = map->key_index_fn(map->capacity, (void *) key);
 
     return idx;
 }
@@ -151,7 +151,7 @@ static int rehash(hashmap *map) {
     int ret = HASHMAP_ERR;
     for (int i = 0; i < pre_size; i++) {
         if (element_space_used(&pre_element_space[i])) {
-            ret = hashmap_set(map, pre_element_space[i].key,
+            ret = hashmap_set(map, &pre_element_space[i].key,
                               pre_element_space[i].value);
             if (ret != HASHMAP_OK)
                 return ret;
@@ -161,7 +161,7 @@ static int rehash(hashmap *map) {
     return HASHMAP_OK;
 }
 
-static int find_empty_space(hashmap *map, hashmap_key key, void *value,
+static int find_empty_space(hashmap *map, hashmap_key *key, void *value,
                             int *final_idx) {
     int idx = get_hash_index(map, key);
     for (int i = 0; i < MAX_CHAIN_LENGTH; i++) {
@@ -177,7 +177,7 @@ static int find_empty_space(hashmap *map, hashmap_key key, void *value,
     return HASHMAP_ELEMENT_FULL;
 }
 
-static int get_value(hashmap *map, hashmap_key key, void *value,
+static int get_value(hashmap *map, hashmap_key *key, void *value,
                      int *element_idx) {
     if (!map)
         return HASHMAP_ERR;
@@ -208,23 +208,24 @@ hashmap *hashmap_init(int capacity,
                       hashmap_free_value *free_value_fn,
                       hashmap_key_index *key_index_fn) {
     hashmap *map = mem_malloc(sizeof(hashmap));
-    if (map) {
-        int hashmap_capacity = (capacity >= HASHMAP_DEFAULT_CAPACITY ?
-                                capacity : HASHMAP_DEFAULT_CAPACITY);
-        map->elements = (hashmap_element *)
-                mem_calloc(hashmap_capacity, sizeof(hashmap_element));
-        if (map->elements) {
-            map->capacity = hashmap_capacity;
-            map->size = 0;
-            map->key_cmp_fn = key_cmp_fn;
-            map->value_cmp_fn = value_cmp_fn;
-            map->free_key_fn = free_key_fn;
-            map->free_value_fn = free_value_fn;
-            map->key_index_fn = key_index_fn;
-        } else {
-            mem_free(map);
-        }
+    if (!map)
+        return NULL;
+
+    int hashmap_capacity = (capacity >= HASHMAP_DEFAULT_CAPACITY ?
+                            capacity : HASHMAP_DEFAULT_CAPACITY);
+    map->elements = (hashmap_element *)
+            mem_calloc(hashmap_capacity, sizeof(hashmap_element));
+    if (!map->elements) {
+        mem_free(map);
+        return NULL;
     }
+    map->capacity = hashmap_capacity;
+    map->size = 0;
+    map->key_cmp_fn = key_cmp_fn;
+    map->value_cmp_fn = value_cmp_fn;
+    map->free_key_fn = free_key_fn;
+    map->free_value_fn = free_value_fn;
+    map->key_index_fn = key_index_fn;
     return map;
 }
 
@@ -232,7 +233,7 @@ int hashmap_set(hashmap *map, void *k, void *value) {
     if (!map)
         return HASHMAP_ERR;
 
-    hashmap_key *key = (hashmap_key*)k;
+    hashmap_key *key = (hashmap_key *) k;
 
     int idx = -1;
     if (need_rehash(map) ||
@@ -244,17 +245,17 @@ int hashmap_set(hashmap *map, void *k, void *value) {
         return HASHMAP_ERR;
     }
 
-    map->elements[idx].key = key;
+    map->elements[idx].key = *key;
     map->elements[idx].value = value;
     map->size++;
     return HASHMAP_OK;
 }
 
-int hashmap_get( hashmap *map, hashmap_key key, void *value) {
-    return get_value(map, key, value, NULL);
+int hashmap_get(hashmap *map, void *key, void *value) {
+    return get_value(map, (hashmap_key *) key, value, NULL);
 }
 
-int hashmap_delete( hashmap *map, void* key,
+int hashmap_delete(hashmap *map, void *key,
                    int free_key, int free_value) {
     if (!map)
         return HASHMAP_ERR;
@@ -263,7 +264,7 @@ int hashmap_delete( hashmap *map, void* key,
     int idx = -1;
     ret = get_value(map, key, NULL, &idx);
     if (ret == HASHMAP_OK) {
-         hashmap_element *e = &map->elements[idx];
+        hashmap_element *e = &map->elements[idx];
         if (free_key && map->free_key_fn)
             map->free_key_fn(&e->key);
         if (free_value && map->free_value_fn)
@@ -274,13 +275,11 @@ int hashmap_delete( hashmap *map, void* key,
     return ret;
 }
 
-int hashmap_free( hashmap *map, int free_key, int free_value) {
+int hashmap_free(hashmap *map, int free_key, int free_value) {
     if (!map)
         return HASHMAP_ERR;
 
-    if ((!free_key && !free_value) || map->size == 0) {
-        mem_free(map->elements);
-    } else {
+    if ((free_key || free_value) && map->size > 0) {
         for (int i = 0; i < map->capacity; i++) {
             hashmap_element *e = &map->elements[i];
             if (!element_space_used(e))
@@ -292,7 +291,7 @@ int hashmap_free( hashmap *map, int free_key, int free_value) {
                 map->free_value_fn(&e->value);
         }
     }
-
+    mem_free(map->elements);
     mem_free(map);
     return HASHMAP_OK;
 }

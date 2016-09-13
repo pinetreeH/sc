@@ -28,7 +28,7 @@ static int parse_url_callback(http_parser *parser, const char *buf,
     char str[STR_MAX_LEN] = {'\0'};
     int ret = get_value_of_key(url, KEY_SID, KEY_END_FLAG, str);
     if (ret > 0) {
-        // get s
+        // get sid
         log_debug("sid:%s\n", str);
         get_clientinfo_by_sid(str);
 

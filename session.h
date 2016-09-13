@@ -5,15 +5,7 @@
 #ifndef SC_SESSION_H
 #define SC_SESSION_H
 
-#define CLIENT_BUF_MAX 1024
-#define CLIENT_SID_MAX 32
-
-typedef struct client_info {
-    char sid[CLIENT_SID_MAX];
-    int transport;
-    char read_buf[CLIENT_BUF_MAX];
-    char write_buf[CLIENT_BUF_MAX];
-} clientInfo;
+#include "client.h"
 
 int session_init(int sid_max);
 
