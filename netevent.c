@@ -34,6 +34,7 @@ static void handle_tcp_recv(struct reactor_base *base, int fd,
         exit(EXIT_FAILURE);
     }
     log_debug("handleTcpRecv_recv:%d,%s\n", rbytes, buf);
+    // if this fd isn't in fd_to_clients map, then it's a new fd
     // parse_recv
     parse_http_request(buf, rbytes);
 }

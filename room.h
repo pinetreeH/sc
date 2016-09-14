@@ -7,6 +7,8 @@
 
 struct room {
     char *name;
+    int sid_cnt;
+    int capacity;
 };
 
 #endif
