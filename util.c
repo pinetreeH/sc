@@ -6,6 +6,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+#include <stdlib.h>
 
 #define LOG_MSG_MAX_LEN  1024
 
@@ -41,12 +43,12 @@ void log_error(const char *fmt, ...) {
 
 
 // test: /socket.io/?EIO=3&transport=polling&t=1473479272828-0
-int get_value_of_key(const char *str, const char *key, const char endFlag, char *value) {
+int get_value_of_key(const char *str, const char *key, const char end_flag, char *value) {
     int idx = 0;
     char *i = NULL;
     if ((i = strstr(str, key)) != NULL) {
         char *j = i + strlen(key);
-        while (*j != endFlag && *j != '\0') {
+        while (*j != end_flag && *j != '\0') {
             value[idx] = *j;
             j++;
             idx++;
@@ -54,4 +56,27 @@ int get_value_of_key(const char *str, const char *key, const char endFlag, char 
         value[idx] = '\0';
     }
     return idx;
+}
+
+int get_timestamp(void) {
+    return time(NULL);
+}
+
+int make_sid(char *sid) {
+    strcpy(sid, "magic_sid");
+}
+
+void *mem_malloc(int size) {
+    return malloc(size);
+}
+
+void mem_free(void *data) {
+    if (data) {
+        free(data);
+        data = NULL;
+    }
+}
+
+void *mem_calloc(int num, int size) {
+    return calloc(num, size);
 }

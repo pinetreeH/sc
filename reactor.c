@@ -4,19 +4,15 @@
 
 #include "reactor.h"
 #include "util.h"
-#include "memory.h"
-#include "timeoutevent.h"
-#include <stdlib.h>
-#include <string.h>
-
+#include "session.h"
 
 struct reactor_base *reactor_base_init(int capacity) {
-    struct reactor_base *base = malloc(sizeof(struct reactor_base));
+    struct reactor_base *base = mem_malloc(sizeof(struct reactor_base));
     do {
         if (!base) {
             break;
         }
-        base->net_events = malloc(sizeof(struct reactor_net_event) * capacity);
+        base->net_events = mem_malloc(sizeof(struct reactor_net_event) * capacity);
         if (!base->net_events) {
             mem_free(base);
             break;
@@ -30,7 +26,7 @@ struct reactor_base *reactor_base_init(int capacity) {
             mem_free(base);
             break;
         }
-        base->ep_events = malloc(sizeof(struct epoll_event) * capacity);
+        base->ep_events = mem_malloc(sizeof(struct epoll_event) * capacity);
         if (!base->ep_events) {
             mem_free(base->net_events);
             mem_free(base);

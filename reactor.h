@@ -18,8 +18,6 @@
 #define REACTOR_TIME_EVENT 2
 #define REACTOR_ALL_EVNET (REACTOR_NET_EVENT|REACTOR_TIME_EVENT)
 
-#define REACTOR_NOTUSED_PARAMETER(p) ((void) p)
-
 
 struct reactor_base;
 

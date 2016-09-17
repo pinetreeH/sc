@@ -3,8 +3,9 @@
 //
 
 #include "netevent.h"
+#include "session.h"
+#include "transport.h"
 #include "util.h"
-#include "parse_http.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -13,6 +14,7 @@
 #include <stdlib.h>
 
 #define TCP_MSG_BUF_LEN 1024
+#define TMP_MSG_MAX 512
 
 static inline void show_ip_port(struct sockaddr_in *sockfd) {
     char ip[INET_ADDRSTRLEN] = {0};
@@ -23,23 +25,45 @@ static inline void show_ip_port(struct sockaddr_in *sockfd) {
 
 static void handle_tcp_recv(struct reactor_base *base, int fd,
                             void *fn_parameter, int mask) {
-    REACTOR_NOTUSED_PARAMETER(base);
-    REACTOR_NOTUSED_PARAMETER(fn_parameter);
-    REACTOR_NOTUSED_PARAMETER(mask);
+    NOTUSED_PARAMETER(base);
+    NOTUSED_PARAMETER(fn_parameter);
+    NOTUSED_PARAMETER(mask);
 
     char buf[TCP_MSG_BUF_LEN] = {'\0'};
-    int rbytes = recv(fd, buf, TCP_MSG_BUF_LEN, 0);
+    int rbytes = tcp_recv(fd, buf, TCP_MSG_BUF_LEN);
     if (rbytes <= 0) {
         log_error("handleTcpRecv_recv rbytes<=0,%d\n", rbytes);
         exit(EXIT_FAILURE);
     }
     log_debug("handleTcpRecv_recv:%d,%s\n", rbytes, buf);
-    // if this fd isn't in fd_to_clients map, then it's a new fd
-    // parse_recv
-    parse_http_request(buf, rbytes);
+    if (!get_client_by_fd(fd)) {
+        // this is a new client, parse http request
+        struct http_request_info info;
+        parse_http_request(buf, rbytes, &info);
+        // new client has no sid and transport should be "websocket"
+        if (!info.has_sid && valid_transport(info.transport)) {
+            char websocket_res[WEBSOCKET_RESPONSE_MAX] = {'\0'};
+            // TODO
+            websocket_response(buf, websocket_res, WEBSOCKET_RESPONSE_MAX);
+            tcp_send(fd, websocket_res, strlen(websocket_res));
+            // send {sid,upgrade,pingTimeout} ...
+            char sid[SID_STR_MAX] = {'\0'};
+            make_sid(sid);
+            char transport_config_msg[256];
+            get_transport_config_msg(sid, transport_config_msg);
+            char encode_msg[TMP_MSG_MAX];
+            encode(PACKET_CONNECT, transport_config_msg,
+                   strlen(transport_config_msg), encode_msg, TMP_MSG_MAX);
+            // after send config msg, we create a new client
+            tcp_send(fd, encode_msg, strlen(encode_msg));
+            add_new_client(fd, sid);
+        }
+    } else {
+        // exist client, parse msg by transport protocol
+    }
 }
 
-inline void set_fd_nonblocking(int fd) {
+void set_fd_nonblocking(int fd) {
     int old_opt = fcntl(fd, F_GETFL);
     int new_opt = old_opt | O_NONBLOCK;
     fcntl(fd, F_SETFL, new_opt);
@@ -73,19 +97,26 @@ int init_socket(char *ip, int port) {
     return listenfd;
 }
 
-void handle_tcp_accpet(struct reactor_base *base, int fd, void *fd_parameter,
-                       int mask) {
-    REACTOR_NOTUSED_PARAMETER(base);
-    REACTOR_NOTUSED_PARAMETER(fd_parameter);
-    REACTOR_NOTUSED_PARAMETER(mask);
+void handle_server_accpet(struct reactor_base *base, int fd, void *fd_parameter,
+                          int mask) {
+    NOTUSED_PARAMETER(base);
+    NOTUSED_PARAMETER(fd_parameter);
+    NOTUSED_PARAMETER(mask);
 
     struct sockaddr_in clientaddr;
     socklen_t clientaddr_len = sizeof(clientaddr);
     int connfd = accept(fd, (struct sockaddr *) &clientaddr, &clientaddr_len);
-    log_debug("handle_tcp_accpet connfd:%d\n", connfd);
+    log_debug("handle_server_accpet connfd:%d\n", connfd);
     show_ip_port(&clientaddr);
     set_fd_nonblocking(connfd);
     reactor_add_net_event(base, connfd, REACTOR_EVENT_READ, handle_tcp_recv,
                           NULL, "handle_tcp_recv");
 }
 
+int tcp_send(int fd, const char *data, int len) {
+    return send(fd, data, len, 0);
+}
+
+int tcp_recv(int fd, char *data, int len) {
+    return recv(fd, data, len, 0);
+}

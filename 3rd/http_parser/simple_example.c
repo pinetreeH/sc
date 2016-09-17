@@ -195,7 +195,13 @@ int on_headers_complete(http_parser *parser) {
 // 设置回调
 static http_parser_settings parser_settings =
         {
-                .on_message_begin    = on_message_begin, .on_message_complete = on_message_complete, .on_headers_complete = on_headers_complete, .on_header_field     = header_field_cb, .on_header_value     = header_value_cb, .on_url              = url_cb, .on_body             = body_cb
+                .on_message_begin    = on_message_begin,
+                .on_message_complete = on_message_complete,
+                .on_headers_complete = on_headers_complete,
+                .on_header_field     = header_field_cb,
+                .on_header_value     = header_value_cb,
+                .on_url              = url_cb,
+                .on_body             = body_cb
         };
 
 

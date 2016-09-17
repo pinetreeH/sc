@@ -11,7 +11,12 @@ void set_fd_nonblocking(int fd);
 
 int init_socket(char *ip, int port);
 
-void handle_tcp_accpet(struct reactor_base *base, int fd, void *fd_parameter,
-                       int mask);
+void handle_server_accpet(struct reactor_base *base, int fd, void *fd_parameter,
+                          int mask);
+
+int tcp_send(int fd, const char *data, int len);
+
+int tcp_recv(int fd, char *data, int len);
+
 
 #endif
