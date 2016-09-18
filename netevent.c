@@ -75,6 +75,9 @@ static void handle_tcp_recv(struct reactor_base *base, int fd,
     } else {
         // exist client, parse msg by transport protocol
         log_debug("exist client,fd:%d\n", fd);
+        char msg[32] = {0};
+        int msg_len = websocket_get_msg(buf, rbytes, msg, 32);
+        eio_decode(msg, msg_len);
     }
 }
 

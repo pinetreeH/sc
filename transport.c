@@ -115,6 +115,10 @@ int websocket_set_msg(const char *data, int data_len, char *dst, int dst_len) {
     return WEBSOCKET_set_content(data, data_len, dst, dst_len);
 }
 
+int websocket_get_msg(const char *data, int data_len, char *dst, int dst_len) {
+    return WEBSOCKET_get_content(data, data_len, dst, dst_len);
+}
+
 inline const char *get_sio_connect_packet(void) {
     return sio_connect_packet;
 }
@@ -142,3 +146,23 @@ void default_sio_packet_init(void) {
     default_sio_connect_packet_init();
     default_sio_pong_packet_init();
 }
+
+int eio_decode(const char *data, int data_len) {
+    char type = data[0];
+    switch (type) {
+        case EIO_PACKET_PING: {
+            log_debug("eio_decode,EIO_PACKET_PING \n");
+            break;
+        }
+        case EIO_PACKET_MESSAGE: {
+            log_debug("eio_decode, EIO_PACKET_MESSAGE \n");
+            break;
+        }
+        default: {
+            log_debug("eio_decode, unknown type:%c \n", type);
+            break;
+        }
+    }
+
+}
+

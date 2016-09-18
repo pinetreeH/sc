@@ -57,7 +57,11 @@ int encode(sio_packet_type type, const char *data, int data_len,
 int eio_encode(eio_packet_type type, const char *data, int data_len,
                char *encoded_data, int encoded_len);
 
+int eio_decode(const char *data, int data_len);
+
 int websocket_set_msg(const char *data, int data_len, char *dst, int dst_len);
+
+int websocket_get_msg(const char *data, int data_len, char *dst, int dst_len);
 
 void default_sio_packet_init(void);
 
