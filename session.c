@@ -40,7 +40,7 @@ int add_new_client(int fd, const char *sid) {
     strcpy(c->sid, sid);
 
     sessions.fd_to_client[fd].fd = fd;
-    sessions.fd_to_client->client = c;
+    sessions.fd_to_client[fd].client = c;
 
     if (hashmap_set(sessions.sid_to_client, (void *) c->sid, (void *) c) ==
         HASHMAP_OK)

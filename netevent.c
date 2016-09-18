@@ -37,6 +37,7 @@ static void handle_tcp_recv(struct reactor_base *base, int fd,
     }
     log_debug("handleTcpRecv_recv:%d,%s\n", rbytes, buf);
     if (is_new_connection(fd, buf, rbytes)) {
+        log_debug("is_new_connection,fd:%d\n", fd);
         // this is a new client, parse http request
         struct http_request_info info;
         parse_http_request(buf, rbytes, &info);
