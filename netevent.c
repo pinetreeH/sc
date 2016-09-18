@@ -36,7 +36,7 @@ static void handle_tcp_recv(struct reactor_base *base, int fd,
         exit(EXIT_FAILURE);
     }
     log_debug("handleTcpRecv_recv:%d,%s\n", rbytes, buf);
-    if (!get_client_by_fd(fd)) {
+    if (is_new_connection(fd, buf, rbytes)) {
         // this is a new client, parse http request
         struct http_request_info info;
         parse_http_request(buf, rbytes, &info);
@@ -51,15 +51,29 @@ static void handle_tcp_recv(struct reactor_base *base, int fd,
             make_sid(sid);
             char transport_config_msg[256];
             get_transport_config_msg(sid, transport_config_msg);
+            int config_msg_len = strlen(transport_config_msg);
             char encode_msg[TMP_MSG_MAX];
-            encode(PACKET_CONNECT, transport_config_msg,
-                   strlen(transport_config_msg), encode_msg, TMP_MSG_MAX);
+            int encode_data_len = eio_encode(EIO_PACKET_OPEN,
+                                             transport_config_msg,
+                                             config_msg_len, encode_msg,
+                                             TMP_MSG_MAX);
+
+            char websocket_msg[TMP_MSG_MAX];
+            int websocket_msg_len = websocket_set_msg(encode_msg,
+                                                      encode_data_len,
+                                                      websocket_msg,
+                                                      TMP_MSG_MAX);
+
+            tcp_send(fd, websocket_msg, websocket_msg_len);
             // after send config msg, we create a new client
-            tcp_send(fd, encode_msg, strlen(encode_msg));
             add_new_client(fd, sid);
+            // send CONNECT packet
+            tcp_send(fd, get_sio_connect_packet(),
+                     get_sio_connect_packet_len());
         }
     } else {
         // exist client, parse msg by transport protocol
+        log_debug("exist client,fd:%d\n", fd);
     }
 }
 

@@ -42,7 +42,8 @@ int add_new_client(int fd, const char *sid) {
     sessions.fd_to_client[fd].fd = fd;
     sessions.fd_to_client->client = c;
 
-    if (hashmap_set(sessions.sid_to_client, (void *) sid, (void *) c) == HASHMAP_OK)
+    if (hashmap_set(sessions.sid_to_client, (void *) c->sid, (void *) c) ==
+        HASHMAP_OK)
         return 0;
 
     return -1;
@@ -73,14 +74,12 @@ int delete_client_by_sid(const char *sid) {
     return -1;
 }
 
-struct client *get_client_by_sid(char *sid) {
+struct client *get_client_by_sid(const char *sid) {
     if (!sid || !sessions.sid_to_client)
         return NULL;
 
-    hashmap_key key;
-    key.void_key = (void *) sid;
     struct client *client = NULL;
-    hashmap_get(sessions.sid_to_client, &key, &client);
+    hashmap_get(sessions.sid_to_client, (void *) sid, &client);
     return client;
 }
 
@@ -93,4 +92,14 @@ struct client *get_client_by_fd(int fd) {
 
 int get_min_time(void) {
     return 1000;
+}
+
+int is_new_connection(int fd, const char *data, int data_len) {
+    // parse data by protocol
+    NOTUSED_PARAMETER(data);
+    NOTUSED_PARAMETER(data_len);
+
+    if (!get_client_by_fd(fd))
+        return 1;
+    return 0;
 }

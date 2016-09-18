@@ -23,6 +23,7 @@ int main(int argc, char **args) {
                           "handle_server_accpet");
 
     http_parse_setting_init();
+    default_sio_packet_init();
     session_init(10);
     reactor_run(base);
 

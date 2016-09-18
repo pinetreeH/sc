@@ -43,7 +43,8 @@ void log_error(const char *fmt, ...) {
 
 
 // test: /socket.io/?EIO=3&transport=polling&t=1473479272828-0
-int get_value_of_key(const char *str, const char *key, const char end_flag, char *value) {
+int get_value_of_key(const char *str, const char *key, const char end_flag,
+                     char *value) {
     int idx = 0;
     char *i = NULL;
     if ((i = strstr(str, key)) != NULL) {

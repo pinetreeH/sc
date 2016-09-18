@@ -80,10 +80,8 @@ uint64_t crc32(const unsigned char *s, unsigned int len) {
 }
 
 int hashmap_strkey_hashindex(int map_capacity, void *k) {
-    hashmap_key *hkey = (hashmap_key *) k;
-
-    uint64_t key = crc32((unsigned char *) (hkey->void_key),
-                         strlen(hkey->void_key));
+    int len = strlen((char *) k);
+    uint64_t key = crc32((unsigned char *) k, len);
 
     /* Robert Jenkins' 32 bit Mix Function */
     key += (key << 12);
@@ -100,21 +98,16 @@ int hashmap_strkey_hashindex(int map_capacity, void *k) {
     return key % map_capacity;
 }
 
-int hashmap_intkey_hashindex(int map_capacity, void *k) {
-    hashmap_key *hkey = (hashmap_key *) k;
-    return hkey->uint64_t_key % map_capacity;
+int hashmap_intkey_hashindex(int map_capacity, void *key) {
+    return *(uint64_t *) key % map_capacity;
 }
 
 int hashmap_strkey_cmp(void *key1, void *key2) {
-    hashmap_key *k1 = (hashmap_key *) key1;
-    hashmap_key *k2 = (hashmap_key *) key2;
-    return strcmp((char *) k1->void_key, (char *) k2->void_key);
+    return strcmp((char *) key1, (char *) key2);
 }
 
 int hashmap_intkey_cmp(void *key1, void *key2) {
-    hashmap_key *k1 = (hashmap_key *) key1;
-    hashmap_key *k2 = (hashmap_key *) key2;
-    return k1->uint64_t_key == k2->uint64_t_key;
+    return *(uint64_t *) key1 == *(uint64_t *) key2;
 }
 
 static inline int need_rehash(hashmap *map) {
@@ -125,10 +118,10 @@ static inline int element_space_used(hashmap_element *e) {
     return e->value != NULL;
 }
 
-static int get_hash_index(hashmap *map, hashmap_key *key) {
+static int get_hash_index(hashmap *map, void *key) {
     int idx = -1;
     if (map && map->key_index_fn)
-        idx = map->key_index_fn(map->capacity, (void *) key);
+        idx = map->key_index_fn(map->capacity, key);
 
     return idx;
 }
@@ -161,12 +154,12 @@ static int rehash(hashmap *map) {
     return HASHMAP_OK;
 }
 
-static int find_empty_space(hashmap *map, hashmap_key *key, void *value,
+static int find_empty_space(hashmap *map, void *key, void *value,
                             int *final_idx) {
     int idx = get_hash_index(map, key);
     for (int i = 0; i < MAX_CHAIN_LENGTH; i++) {
         hashmap_element *e = &map->elements[idx + i];
-        if (element_space_used(e)) {
+        if (!element_space_used(e)) {
             *final_idx = idx + i;
             return HASHMAP_OK;
         }
@@ -177,7 +170,7 @@ static int find_empty_space(hashmap *map, hashmap_key *key, void *value,
     return HASHMAP_ELEMENT_FULL;
 }
 
-static int get_value(hashmap *map, hashmap_key *key, void *value,
+static int get_value(hashmap *map, void *key, void *value,
                      int *element_idx) {
     if (!map)
         return HASHMAP_ERR;
@@ -229,11 +222,9 @@ hashmap *hashmap_init(int capacity,
     return map;
 }
 
-int hashmap_set(hashmap *map, void *k, void *value) {
+int hashmap_set(hashmap *map, void *key, void *value) {
     if (!map)
         return HASHMAP_ERR;
-
-    hashmap_key *key = (hashmap_key *) k;
 
     int idx = -1;
     if (need_rehash(map) ||
@@ -245,14 +236,14 @@ int hashmap_set(hashmap *map, void *k, void *value) {
         return HASHMAP_ERR;
     }
 
-    map->elements[idx].key = *key;
+    map->elements[idx].key = key;
     map->elements[idx].value = value;
     map->size++;
     return HASHMAP_OK;
 }
 
 int hashmap_get(hashmap *map, void *key, void *value) {
-    return get_value(map, (hashmap_key *) key, value, NULL);
+    return get_value(map, key, value, NULL);
 }
 
 int hashmap_delete(hashmap *map, void *key,

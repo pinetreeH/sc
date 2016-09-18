@@ -24,8 +24,7 @@ struct fd_client {
 struct session {
     int capacity;
     int size;
-
-    struct fd_client *fd_to_client;
+    struct fd_client *fd_to_client;// array
     hashmap *sid_to_client; // sid is a string
 };
 
@@ -38,11 +37,13 @@ int delete_client_by_fd(int fd);
 
 int delete_client_by_sid(const char *sid);
 
-struct client *get_client_by_sid(char *sid);
+struct client *get_client_by_sid(const char *sid);
 
 struct client *get_client_by_fd(int fd);
 
 int get_min_time(void);
+
+int is_new_connection(int fd, const char *data, int data_len);
 
 
 #endif

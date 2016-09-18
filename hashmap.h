@@ -23,13 +23,8 @@ typedef int hashmap_value_cmp(void *value1, void *value2);
 
 typedef int hashmap_key_index(int map_capacity, void *key);
 
-typedef union _hashmap_key {
-    uint64_t uint64_t_key;
-    void *void_key;
-}hashmap_key;
-
 typedef struct _hashmap_element {
-    hashmap_key key;
+    void *key;
     void *value;
 } hashmap_element;
 

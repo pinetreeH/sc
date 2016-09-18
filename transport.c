@@ -20,20 +20,13 @@
 
 #define TRANSPORT_WEBSOCKET "websocket"
 
-typedef enum _eio_packet_type {
-    EIO_PACKET_OPEN = 0,
-    EIO_PACKET_CLOSE = 1,
-    EIO_PACKET_PING = 2,
-    EIO_PACKET_PONG = 3,
-    EIO_PACKET_MESSAGE = 4,
-    EIO_PACKET_UPGRADE = 5,
-    EIO_PACKET_NOOP = 6
-} eio_packet_type;
-
-
 static http_parser_settings settings;
 static int ping_interval;
 static int ping_timeout;
+static const char *sio_connect_packet;
+static int sio_connect_packet_len;
+static const char *sio_pong_packet;
+static int sio_pong_packet_len;
 
 int valid_transport(const char *transport_str) {
     return strcmp(transport_str, TRANSPORT_WEBSOCKET) == 0 ? 1 : -1;
@@ -98,16 +91,54 @@ void transport_config_init(int interval, int timeout) {
     ping_timeout = timeout;
 }
 
-int encode(packet_type type, const char *data, int data_len,
+int encode(sio_packet_type type, const char *data, int data_len,
            char *encoded_data, int encoded_len) {
+}
+
+int eio_encode(eio_packet_type type, const char *data, int data_len,
+               char *encoded_data, int encoded_len) {
+    if (encoded_len <= data_len)
+        return -1;
+
     int encode_idx = 0;
-    if (type == PACKET_CONNECT) {
+    if (type == EIO_PACKET_OPEN) {
         encoded_data[encode_idx++] = EIO_PACKET_OPEN;
         for (int i = 0; i < data_len; i++) {
-            if (data[i] == '\0')
-                break;
             encoded_data[encode_idx++] = data[i];
         }
     }
+
     return encode_idx;
+}
+
+int websocket_set_msg(const char *data, int data_len, char *dst, int dst_len) {
+    return WEBSOCKET_set_content(data, data_len, dst, dst_len);
+}
+
+inline const char *get_sio_connect_packet(void) {
+    return sio_connect_packet;
+}
+
+inline int get_sio_connect_packet_len(void) {
+    return sio_connect_packet_len;
+}
+
+static void default_sio_connect_packet_init(void) {
+    char connect_msg[2] = {0};
+    connect_msg[0] = EIO_PACKET_MESSAGE;
+    connect_msg[1] = SIO_PACKET_CONNECT;
+    char websocket_msg[128] = {0};
+    sio_connect_packet_len = WEBSOCKET_set_content(connect_msg, 2,
+                                                   websocket_msg, 128);
+    sio_connect_packet = (char *) mem_malloc(sio_connect_packet_len);
+    memcpy(sio_connect_packet, websocket_msg, sio_connect_packet_len);
+}
+
+static void default_sio_pong_packet_init(void) {
+
+}
+
+void default_sio_packet_init(void) {
+    default_sio_connect_packet_init();
+    default_sio_pong_packet_init();
 }
