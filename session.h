@@ -45,5 +45,7 @@ int get_min_time(void);
 
 int is_new_connection(int fd, const char *data, int data_len);
 
+int update_client_heartbeat_by_fd(int fd);
+
 
 #endif

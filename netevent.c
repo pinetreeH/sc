@@ -34,7 +34,7 @@ static void handle_tcp_recv(struct reactor_base *base, int fd,
         exit(EXIT_FAILURE);
     }
     log_debug("handleTcpRecv_recv:%d,%s\n", buf_len, buf);
-    handle_connection_data(fd, buf, buf_len);
+    handle_recv_data(fd, buf, buf_len);
 }
 
 

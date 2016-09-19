@@ -103,3 +103,7 @@ int is_new_connection(int fd, const char *data, int data_len) {
         return 1;
     return 0;
 }
+
+int update_client_heartbeat_by_fd(int fd) {
+
+}
