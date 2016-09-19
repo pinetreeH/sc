@@ -26,4 +26,12 @@ void mem_free(void *data);
 
 void *mem_calloc(int num, int size);
 
+int tcp_send(int fd, const char *data, int len);
+
+int tcp_recv(int fd, char *data, int len);
+
+void set_fd_nonblocking(int fd);
+
+int get_msg_from_websocket_data(const char *websocket_data, int len, char *dst);
+
 #endif

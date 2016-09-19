@@ -8,6 +8,10 @@
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #define LOG_MSG_MAX_LEN  1024
 
@@ -80,4 +84,29 @@ void mem_free(void *data) {
 
 void *mem_calloc(int num, int size) {
     return calloc(num, size);
+}
+
+int tcp_send(int fd, const char *data, int len) {
+    return send(fd, data, len, 0);
+}
+
+int tcp_recv(int fd, char *data, int len) {
+    return recv(fd, data, len, 0);
+}
+
+
+void set_fd_nonblocking(int fd) {
+    int old_opt = fcntl(fd, F_GETFL);
+    int new_opt = old_opt | O_NONBLOCK;
+    fcntl(fd, F_SETFL, new_opt);
+}
+
+int get_msg_from_websocket_data(const char *websocket_data, int len, char *dst) {
+    for (int i = 0; i < len; i++) {
+        if (websocket_data[i] == '[') {
+            memcpy(dst, &websocket_data[i], len - i);
+            return len - i;
+        }
+    }
+    return 0;
 }

@@ -10,6 +10,7 @@
 #define WEBSOCKET_RESPONSE_MAX 1024
 
 typedef enum _eio_packet_type {
+    EIO_PACKET_ERR = -1,
     EIO_PACKET_OPEN = '0',
     EIO_PACKET_CLOSE = '1',
     EIO_PACKET_PING = '2',
@@ -20,6 +21,7 @@ typedef enum _eio_packet_type {
 } eio_packet_type;
 
 typedef enum _sio_packet_type {
+    SIO_PACKET_ERR = -1,
     SIO_PACKET_CONNECT = '0',
     SIO_PACKET_DISCONNECT = '1',
     SIO_PACKET_EVENT = '2',
@@ -57,7 +59,7 @@ int encode(sio_packet_type type, const char *data, int data_len,
 int eio_encode(eio_packet_type type, const char *data, int data_len,
                char *encoded_data, int encoded_len);
 
-int eio_decode(const char *data, int data_len);
+eio_packet_type eio_decode(const char *data, int data_len);
 
 int websocket_set_msg(const char *data, int data_len, char *dst, int dst_len);
 
@@ -69,5 +71,8 @@ const char *get_sio_connect_packet(void);
 
 int get_sio_connect_packet_len(void);
 
+const char *get_sio_pong_packet(void);
+
+int get_sio_pong_packet_len(void);
 
 #endif

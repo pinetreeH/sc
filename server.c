@@ -11,8 +11,8 @@ int main(int argc, char **args) {
     if (!base)
         exit(EXIT_FAILURE);
 
-    int ping_interval = 25000;
-    int ping_timeout = 60000;
+    int ping_interval = 5000;
+    int ping_timeout = 10000;
     transport_config_init(ping_interval, ping_timeout);
     char *ip = "127.0.0.1";
     int port = 5074;

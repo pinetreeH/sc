@@ -127,6 +127,14 @@ inline int get_sio_connect_packet_len(void) {
     return sio_connect_packet_len;
 }
 
+const char *get_sio_pong_packet(void) {
+    return sio_pong_packet;
+}
+
+int get_sio_pong_packet_len(void) {
+    return sio_pong_packet_len;
+}
+
 static void default_sio_connect_packet_init(void) {
     char connect_msg[2] = {0};
     connect_msg[0] = EIO_PACKET_MESSAGE;
@@ -139,7 +147,13 @@ static void default_sio_connect_packet_init(void) {
 }
 
 static void default_sio_pong_packet_init(void) {
-
+    char connect_msg[1] = {0};
+    connect_msg[0] = EIO_PACKET_PONG;
+    char websocket_msg[32] = {0};
+    sio_pong_packet_len = WEBSOCKET_set_content(connect_msg, 1,
+                                                websocket_msg, 32);
+    sio_pong_packet = (char *) mem_malloc(sio_pong_packet_len);
+    memcpy(sio_pong_packet, websocket_msg, sio_pong_packet_len);
 }
 
 void default_sio_packet_init(void) {
@@ -147,15 +161,18 @@ void default_sio_packet_init(void) {
     default_sio_pong_packet_init();
 }
 
-int eio_decode(const char *data, int data_len) {
+eio_packet_type eio_decode(const char *data, int data_len) {
+    eio_packet_type etype = EIO_PACKET_ERR;
     char type = data[0];
     switch (type) {
         case EIO_PACKET_PING: {
             log_debug("eio_decode,EIO_PACKET_PING \n");
+            etype = EIO_PACKET_PING;
             break;
         }
         case EIO_PACKET_MESSAGE: {
             log_debug("eio_decode, EIO_PACKET_MESSAGE \n");
+            etype = EIO_PACKET_MESSAGE;
             break;
         }
         default: {
@@ -163,6 +180,6 @@ int eio_decode(const char *data, int data_len) {
             break;
         }
     }
-
+    return etype;
 }
 
