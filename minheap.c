@@ -23,7 +23,7 @@ struct heap {
     heap_element *elements;
 };
 
-static heap_element *minheap_reorder_up(heap *h, int idx) {
+static heap_element *heap_reorder_up(heap *h, int idx) {
     heap_element e = h->elements[idx];
     while (idx > 0) {
         int parent_idx = parent_index(idx);
@@ -36,7 +36,7 @@ static heap_element *minheap_reorder_up(heap *h, int idx) {
     return h->elements + idx;
 }
 
-static heap_element *minheap_reorder_down(heap *h, int idx) {
+static heap_element *heap_reorder_down(heap *h, int idx) {
     heap_element e = h->elements[idx];
     int child_idx = 0;
     child_idx = left_child_index(idx);
@@ -76,7 +76,7 @@ void *heap_insert(heap *h, void *key, void *data) {
         return NULL;
     heap_element e = {key, data};
     h->elements[h->size++] = e;
-    return (void *) minheap_reorder_up(h, h->size - 1);
+    return (void *) heap_reorder_up(h, h->size - 1);
 }
 
 int heap_del_root(heap *h) {
@@ -85,27 +85,9 @@ int heap_del_root(heap *h) {
 
     reset_element(h->elements[0]);
     h->elements[0] = h->elements[h->size > 0 ? h->size - 1 : 0];
-    minheap_reorder_down(h, 0);
+    heap_reorder_down(h, 0);
     h->size--;
     return 0;
-}
-
-void *minheap_update(heap *h, void *elment, void *new_key,
-                     heap_key_update *update_fn) {
-    if (!h || !elment)
-        return -1;
-
-    heap_element *e = (heap_element *) elment;
-    void *old_key = e->key;
-    int add = update_fn(new_key, old_key);
-    e->key = new_key;
-    int idx = e - h->elements;
-    if (add == 0)
-        return e;
-    else if (add > 0)
-        return minheap_reorder_down(h, idx);
-    else
-        return minheap_reorder_up(h, idx);
 }
 
 extern int heap_get_root(heap *h, void **key, void **data) {
@@ -127,4 +109,22 @@ int minheap_key_update(void *k1, void *k2) {
     int key1 = *(int *) k1;
     int key2 = *(int *) k2;
     return key1 - key2;
+}
+
+void *minheap_update(heap *h, void *elment, void *new_key,
+                     heap_key_update *update_fn) {
+    if (!h || !elment)
+        return -1;
+
+    heap_element *e = (heap_element *) elment;
+    void *old_key = e->key;
+    int add = update_fn(new_key, old_key);
+    e->key = new_key;
+    int idx = e - h->elements;
+    if (add == 0)
+        return e;
+    else if (add > 0)
+        return heap_reorder_down(h, idx);
+    else
+        return heap_reorder_up(h, idx);
 }
