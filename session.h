@@ -7,9 +7,6 @@
 
 //#define ROOM_NAME_MAX 32
 
-#include "hashmap.h"
-#include "minheap.h"
-
 struct client;
 
 extern int ses_init(int capacity);

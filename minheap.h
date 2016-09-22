@@ -5,28 +5,28 @@
 #ifndef SC_MINHEAP_MINHEAP_H
 #define SC_MINHEAP_MINHEAP_H
 
-typedef int element_cmp(void *e1, void *e2);
+// minheap :return 1 if k1 <= k2; 0 if k1 > k2
+typedef int heap_key_cmp(void *k1, void *k2);
 
-typedef struct _heap_element {
-    int key;
-    void *data;
-} heap_element;
+// return *k1 - *k2
+typedef int heap_key_update(void *k1, void *k2);
 
-typedef struct _heap {
-    int capacity;
-    int size;
-    heap_element *elements;
-    element_cmp *cmp_fn;
-} heap;
+typedef struct heap heap;
 
-extern heap *minheap_init(int capacity);
+extern heap *heap_init(int capacity, heap_key_cmp *cmp_fn);
 
-extern heap_element *minheap_insert(heap *h, heap_element e);
+extern void *heap_insert(heap *h, void *key, void *data);
 
-extern int minheap_pop(heap *h, heap_element *e);
+extern int heap_del_root(heap *h);
 
-extern heap_element *minheap_update(heap *h, heap_element *e, int newkey);
+extern void *minheap_update(heap *h, void *elment, void *new_key,
+                            heap_key_update *update_fn);
 
-extern heap_element minheap_get_top(heap *h);
+extern int heap_get_root(heap *h, void **key, void **data);
+
+// for minheap
+extern int minheap_key_cmp(void *k1, void *k2);
+
+extern int minheap_key_update(void *k1, void *k2);
 
 #endif

@@ -88,7 +88,7 @@ int ae_add_net_event(struct reactor_base *base, int fd, int mask,
             ep.events |= EPOLLOUT;
         }
         ep.data.fd = fd;
-        int op = (old_mask == REACTOR_EVENT_NONE ? EPOLL_CTL_ADD :
+        int op = (old_mask == AE_EVENT_NONE ? EPOLL_CTL_ADD :
                   EPOLL_CTL_MOD);
         if (epoll_ctl(base->epoll_fd, op, fd, &ep) == -1) {
             break;
@@ -119,7 +119,7 @@ int ae_del_net_event(struct reactor_base *base, int fd, int mask) {
         }
         struct reactor_net_event *fe = &base->net_events[fd];
         int old_mask = fe->mask;
-        if (old_mask == REACTOR_EVENT_NONE) {
+        if (old_mask == AE_EVENT_NONE) {
             ret = AE_OK;
             break;
         }
@@ -133,7 +133,7 @@ int ae_del_net_event(struct reactor_base *base, int fd, int mask) {
             ep.events |= EPOLLOUT;
         }
         ep.data.fd = fd;
-        int op = (new_mask == REACTOR_EVENT_NONE ? EPOLL_CTL_DEL :
+        int op = (new_mask == AE_EVENT_NONE ? EPOLL_CTL_DEL :
                   EPOLL_CTL_MOD);
         if (epoll_ctl(base->epoll_fd, op, fd, &ep) == -1) {
             break;
@@ -143,9 +143,9 @@ int ae_del_net_event(struct reactor_base *base, int fd, int mask) {
 //            fe->read_fn = fe->write_fn = NULL;
 //            if (fe->fn_parameter)free(fe->fn_parameter);
 //        }
-        if (fd == base->maxfd && fe->mask == REACTOR_EVENT_NONE) {
+        if (fd == base->maxfd && fe->mask == AE_EVENT_NONE) {
             for (int i = base->maxfd - 1; i >= 0; i--) {
-                if (base->net_events[i].mask != REACTOR_EVENT_NONE) {
+                if (base->net_events[i].mask != AE_EVENT_NONE) {
                     break;
                 }
                 base->maxfd = i;//maxfd maybe 0
@@ -161,7 +161,8 @@ int ae_get_capacity(struct reactor_base *base) {
 
 static int reactor_process_net_event(struct reactor_base *base) {
     int processed_cnt = 0;
-    int min_time = get_min_time();
+    //TODO
+    int min_time = ses_get_min_time();
     int fds = epoll_wait(base->epoll_fd, base->ep_events, base->capacity, min_time);
     for (int i = 0; i < fds; i++) {
         struct epoll_event *ep = base->ep_events + i;

@@ -9,14 +9,25 @@
 #define left_child_index(idx) (idx * 2 + 1)
 #define right_child_index(idx) (idx * 2 + 2)
 #define parent_index(idx)  ((idx - 1) / 2)
-#define minheap_cmp(k1, k2) ( k1 <= k2)
 #define reset_element(e)  do{e.key = 0; e.data = NULL;}while(0);
+
+typedef struct _heap_element {
+    void *key;
+    void *data;
+} heap_element;
+
+struct heap {
+    int capacity;
+    int size;
+    heap_key_cmp *key_cmp_fn;
+    heap_element *elements;
+};
 
 static heap_element *minheap_reorder_up(heap *h, int idx) {
     heap_element e = h->elements[idx];
     while (idx > 0) {
         int parent_idx = parent_index(idx);
-        if (minheap_cmp(h->elements[parent_idx].key, h->elements[idx].key))
+        if (h->key_cmp_fn(h->elements[parent_idx].key, h->elements[idx].key))
             break;
         h->elements[idx] = h->elements[parent_idx];
         idx = parent_idx;
@@ -31,10 +42,10 @@ static heap_element *minheap_reorder_down(heap *h, int idx) {
     child_idx = left_child_index(idx);
     while (child_idx < h->size) {
         if (child_idx + 1 < h->size &&
-            h->elements[child_idx].key > h->elements[child_idx + 1].key) {
+            !h->key_cmp_fn(h->elements[child_idx].key, h->elements[child_idx + 1].key)) {
             child_idx++;
         }
-        if (h->elements[child_idx].key >= e.key)
+        if (!h->key_cmp_fn(h->elements[child_idx].key, e.key))
             break;
         h->elements[idx] = h->elements[child_idx];
         idx = child_idx;
@@ -44,33 +55,34 @@ static heap_element *minheap_reorder_down(heap *h, int idx) {
     return h->elements + idx;
 }
 
-heap *minheap_init(int capacity) {
+heap *heap_init(int capacity, heap_key_cmp *cmp_fn) {
     heap *h = (heap *) mem_malloc(sizeof(heap));
     if (h) {
-        h->elements = (heap_element *) mem_malloc(sizeof(heap_element));
+        h->elements = (heap_element *) mem_malloc(sizeof(heap_element) *
+                                                  capacity);
         if (!h->elements) {
             mem_free(h);
             return NULL;
         }
         h->capacity = capacity;
         h->size = 0;
+        h->key_cmp_fn = cmp_fn;
     }
     return h;
 }
 
-heap_element *minheap_insert(heap *h, heap_element e) {
+void *heap_insert(heap *h, void *key, void *data) {
     if (!h || h->size >= h->capacity - 1)
         return NULL;
-
+    heap_element e = {key, data};
     h->elements[h->size++] = e;
-    return minheap_reorder_up(h, h->size - 1);
+    return (void *) minheap_reorder_up(h, h->size - 1);
 }
 
-int minheap_pop(heap *h, heap_element *element) {
+int heap_del_root(heap *h) {
     if (!h)
         return -1;
 
-    *element = h->elements[0];
     reset_element(h->elements[0]);
     h->elements[0] = h->elements[h->size > 0 ? h->size - 1 : 0];
     minheap_reorder_down(h, 0);
@@ -78,13 +90,15 @@ int minheap_pop(heap *h, heap_element *element) {
     return 0;
 }
 
-heap_element *minheap_update(heap *h, heap_element *e, int newkey) {
-    if (!h || !e)
+void *minheap_update(heap *h, void *elment, void *new_key,
+                     heap_key_update *update_fn) {
+    if (!h || !elment)
         return -1;
 
-    int oldkey = e->key;
-    int add = newkey - oldkey;
-    e->key = newkey;
+    heap_element *e = (heap_element *) elment;
+    void *old_key = e->key;
+    int add = update_fn(new_key, old_key);
+    e->key = new_key;
     int idx = e - h->elements;
     if (add == 0)
         return e;
@@ -94,6 +108,23 @@ heap_element *minheap_update(heap *h, heap_element *e, int newkey) {
         return minheap_reorder_up(h, idx);
 }
 
-extern heap_element minheap_get_top(heap *h) {
-    return h->elements[0];
+extern int heap_get_root(heap *h, void **key, void **data) {
+    if (!h)
+        return -1;
+
+    *key = h->elements[0].key;
+    *data = h->elements[0].data;
+    return 0;
+}
+
+int minheap_key_cmp(void *k1, void *k2) {
+    int key1 = *(int *) k1;
+    int key2 = *(int *) k2;
+    return key1 <= key2;
+}
+
+int minheap_key_update(void *k1, void *k2) {
+    int key1 = *(int *) k1;
+    int key2 = *(int *) k2;
+    return key1 - key2;
 }

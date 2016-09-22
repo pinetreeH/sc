@@ -4,6 +4,8 @@
 
 #include "session.h"
 #include "util.h"
+#include "hashmap.h"
+#include "minheap.h"
 #include <string.h>
 
 #define CLIENT_SID_MAX 32
@@ -12,7 +14,7 @@ struct client {
     char sid[CLIENT_SID_MAX];
     int fd;
     int heartbeat;
-    heap_element *heartbeat_in_sesssion;
+    heap *heartbeat_in_ses;
 };
 
 struct fd_client {
@@ -38,7 +40,7 @@ int ses_init(int capacity) {
                                           hashmap_strkey_hashindex);
     sessions.fd_to_client = mem_calloc(capacity, sizeof(struct fd_client));
 
-    sessions.heartbeat = minheap_init(capacity);
+    sessions.heartbeat = heap_init(capacity, minheap_key_cmp);
 
     if (!sessions.sid_to_client)
         return -1;
@@ -66,10 +68,8 @@ int ses_add_new_client(int fd, const char *sid) {
     c->fd = fd;
     c->heartbeat = util_get_timestamp();
     strcpy(c->sid, sid);
-    heap_element e;
-    e.key = c->heartbeat;
-    e.data = c;
-    c->heartbeat_in_sesssion = minheap_insert(sessions.heartbeat, e);
+    c->heartbeat_in_ses = heap_insert(sessions.heartbeat,
+                                      (void *) &c->heartbeat, (void *) c);
 
     sessions.fd_to_client[fd].fd = fd;
     sessions.fd_to_client[fd].client = c;
@@ -123,10 +123,11 @@ struct client *ses_get_client_by_fd(int fd) {
 }
 
 int ses_get_min_time(void) {
-    heap_element e = minheap_get_top(sessions.heartbeat);
-    if (e.key > 0)
-        return e.key;
-
+    int *timestamp = NULL;
+    struct client *c = NULL;
+    heap_get_root(sessions.heartbeat, &timestamp, &c);
+    // TODO
+    return 10000;
 }
 
 int ses_new_connection(int fd, const char *data, int data_len) {
@@ -145,7 +146,8 @@ int ses_update_client_heartbeat_by_fd(int fd) {
         return 0;
 
     c->heartbeat = util_get_timestamp();
-    c->heartbeat_in_sesssion = minheap_update(sessions.heartbeat,
-                                              c->heartbeat_in_sesssion,
-                                              c->heartbeat);
+    c->heartbeat_in_ses = minheap_update(sessions.heartbeat,
+                                         (void *) c->heartbeat_in_ses,
+                                         (void *) &c->heartbeat,
+                                         minheap_key_update);
 }

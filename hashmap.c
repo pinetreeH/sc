@@ -6,6 +6,7 @@
 #include "util.h"
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #define MAX_CHAIN_LENGTH 8
 #define HASHMAP_DEFAULT_CAPACITY 128
