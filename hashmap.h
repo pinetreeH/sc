@@ -23,29 +23,25 @@ typedef int hashmap_key_index(int map_capacity, void *key);
 
 typedef struct hashmap hashmap;
 
-hashmap *hashmap_init(int capacity,
-                      hashmap_key_cmp *key_cmp_fn,
-                      hashmap_value_cmp *value_cmp_fn,
-                      hashmap_free_key *free_key_fn,
-                      hashmap_free_value *free_value_fn,
-                      hashmap_key_index *key_index_fn);
+extern hashmap *hashmap_init(int capacity,
+                             hashmap_key_cmp *key_cmp_fn,
+                             hashmap_value_cmp *value_cmp_fn,
+                             hashmap_free_key *free_key_fn,
+                             hashmap_free_value *free_value_fn,
+                             hashmap_key_index *key_index_fn);
 
-int hashmap_free(hashmap *map, int free_key, int free_value);
+extern int hashmap_free(hashmap *map, int free_key, int free_value);
 
-int hashmap_set(hashmap *map, void *key, void *value);
+extern int hashmap_set(hashmap *map, void *key, void *value);
 
-int hashmap_get(hashmap *map, void *key, void *value);
+extern int hashmap_get(hashmap *map, void *key, void *value);
 
-int hashmap_delete(hashmap *map, void *key, int free_key, int free_value);
+extern int hashmap_delete(hashmap *map, void *key, int free_key,
+                          int free_value);
 
 // for specific key value type
 int hashmap_strkey_hashindex(int map_capacity, void *key);
 
-int hashmap_intkey_hashindex(int map_capacity, void *key);
-
 int hashmap_strkey_cmp(void *key1, void *key2);
-
-int hashmap_intkey_cmp(void *key1, void *key2);
-
 
 #endif

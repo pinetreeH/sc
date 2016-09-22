@@ -7,10 +7,10 @@
 
 struct reactor_base;
 
-int init_socket(char *ip, int port);
+extern int init_socket(char *ip, int port);
 
-void handle_server_accpet(struct reactor_base *base, int fd, void *fd_parameter,
-                          int mask);
+extern void handle_server_accpet(struct reactor_base *base, int fd,
+                                 void *fd_parameter, int mask);
 
 
 #endif

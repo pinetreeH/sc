@@ -24,21 +24,21 @@ struct reactor_base;
 typedef void process_fn(struct reactor_base *eventLoop,
                         int fd, void *fn_parameter, int mask);
 
-struct reactor_base *reactor_base_init(int capacity);
+extern struct reactor_base *reactor_base_init(int capacity);
 
-void reactor_base_delete(struct reactor_base *base);
+extern void reactor_base_delete(struct reactor_base *base);
 
-int reactor_add_net_event(struct reactor_base *base, int fd, int mask,
-                          process_fn *fn, void *fn_parameter,
-                          const char *fn_name);
+extern int reactor_add_net_event(struct reactor_base *base, int fd, int mask,
+                                 process_fn *fn, void *fn_parameter,
+                                 const char *fn_name);
 
-int reactor_delete_net_event(struct reactor_base *base, int fd,
-                             int mask);
+extern int reactor_delete_net_event(struct reactor_base *base, int fd,
+                                    int mask);
 
-int reactor_get_capacity(struct reactor_base *reactor_base);
+extern int reactor_get_capacity(struct reactor_base *reactor_base);
 
-void reactor_stop(struct reactor_base *reactor_base);
+extern void reactor_stop(struct reactor_base *reactor_base);
 
-void reactor_run(struct reactor_base *eventLoop);
+extern void reactor_run(struct reactor_base *eventLoop);
 
 #endif

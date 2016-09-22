@@ -33,8 +33,9 @@ static struct session sessions;
 int session_init(int capacity) {
     sessions.capacity = capacity;
     sessions.size = 0;
-    sessions.sid_to_client = hashmap_init(capacity, hashmap_strkey_cmp, NULL,
-                                          NULL, NULL, hashmap_strkey_hashindex);
+    sessions.sid_to_client = hashmap_init(capacity, hashmap_strkey_cmp,
+                                          NULL, NULL, NULL,
+                                          hashmap_strkey_hashindex);
     sessions.fd_to_client = mem_calloc(capacity, sizeof(struct fd_client));
 
     sessions.heartbeat = minheap_init(capacity);
@@ -73,8 +74,8 @@ int add_new_client(int fd, const char *sid) {
     sessions.fd_to_client[fd].fd = fd;
     sessions.fd_to_client[fd].client = c;
 
-    if (hashmap_set(sessions.sid_to_client, (void *) c->sid, (void *) c) ==
-        HASHMAP_OK)
+    if (hashmap_set(sessions.sid_to_client, (void *) c->sid, (void *) c)
+        == HASHMAP_OK)
         return 0;
 
     return -1;

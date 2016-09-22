@@ -39,42 +39,44 @@ struct http_request_info {
     int has_transport;
 };
 
-int valid_transport(const char *transport_str);
+extern int valid_transport(const char *transport_str);
 
-void http_parse_setting_init(void);
+extern void http_parse_setting_init(void);
 
-int parse_http_request(const char *buf, int buf_len,
-                       struct http_request_info *info);
+extern int parse_http_request(const char *buf, int buf_len,
+                              struct http_request_info *info);
 
-void websocket_response(const char *req, char *resp, int resp_len);
+extern void websocket_response(const char *req, char *resp, int resp_len);
 
 
-int get_transport_config_msg(const char *sid, char *msg);
+extern int get_transport_config_msg(const char *sid, char *msg);
 
-void transport_config_init(int ping_interval, int ping_timeout);
+extern void transport_config_init(int ping_interval, int ping_timeout);
 
-int encode(sio_packet_type type, const char *data, int data_len,
-           char *encoded_data, int encoded_len);
+extern int encode(sio_packet_type type, const char *data, int data_len,
+                  char *encoded_data, int encoded_len);
 
-int eio_encode(eio_packet_type type, const char *data, int data_len,
-               char *encoded_data, int encoded_len);
+extern int eio_encode(eio_packet_type type, const char *data, int data_len,
+                      char *encoded_data, int encoded_len);
 
-eio_packet_type eio_decode(const char *data, int data_len);
+extern eio_packet_type eio_decode(const char *data, int data_len);
 
-int websocket_set_msg(const char *data, int data_len, char *dst, int dst_len);
+extern int websocket_set_msg(const char *data, int data_len, char *dst,
+                             int dst_len);
 
-int websocket_get_msg(const char *data, int data_len, char *dst, int dst_len);
+extern int websocket_get_msg(const char *data, int data_len, char *dst,
+                             int dst_len);
 
-void default_sio_packet_init(void);
+extern void default_sio_packet_init(void);
 
-const char *get_sio_connect_packet(void);
+extern const char *get_sio_connect_packet(void);
 
-int get_sio_connect_packet_len(void);
+extern int get_sio_connect_packet_len(void);
 
-const char *get_sio_pong_packet(void);
+extern const char *get_sio_pong_packet(void);
 
-int get_sio_pong_packet_len(void);
+extern int get_sio_pong_packet_len(void);
 
-int get_ping_timeout(void);
+extern int get_ping_timeout(void);
 
 #endif

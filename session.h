@@ -12,23 +12,23 @@
 
 struct client;
 
-int session_init(int capacity);
+extern int session_init(int capacity);
 
-int add_new_client(int fd, const char *sid);
+extern int add_new_client(int fd, const char *sid);
 
-int delete_client_by_fd(int fd);
+extern int delete_client_by_fd(int fd);
 
-int delete_client_by_sid(const char *sid);
+extern int delete_client_by_sid(const char *sid);
 
-struct client *get_client_by_sid(const char *sid);
+extern struct client *get_client_by_sid(const char *sid);
 
-struct client *get_client_by_fd(int fd);
+extern struct client *get_client_by_fd(int fd);
 
-int get_min_time(void);
+extern int get_min_time(void);
 
-int is_new_connection(int fd, const char *data, int data_len);
+extern int is_new_connection(int fd, const char *data, int data_len);
 
-int update_client_heartbeat_by_fd(int fd);
+extern int update_client_heartbeat_by_fd(int fd);
 
 
 #endif
