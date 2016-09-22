@@ -28,7 +28,7 @@ static int sio_connect_packet_len;
 static const char *sio_pong_packet;
 static int sio_pong_packet_len;
 
-int valid_transport(const char *transport_str) {
+int tra_valid_transport(const char *transport_str) {
     return strcmp(transport_str, TRANSPORT_WEBSOCKET) == 0 ? 1 : -1;
 }
 
@@ -41,7 +41,7 @@ static int parse_url_callback(http_parser *parser, const char *buf,
 
     // try to get sid first
     char sid_str[STR_MAX_LEN] = {'\0'};
-    int ret = get_value_of_key(url, KEY_SID, KEY_END_FLAG, sid_str);
+    int ret = util_get_value_of_key(url, KEY_SID, KEY_END_FLAG, sid_str);
     if (ret > 0) {
         info->has_sid = 1;
         strcpy(info->sid, sid_str);
@@ -49,7 +49,7 @@ static int parse_url_callback(http_parser *parser, const char *buf,
     }
     // get transport
     char transport_str[STR_MAX_LEN] = {'\0'};
-    ret = get_value_of_key(url, KEY_TRANSPORT, KEY_END_FLAG, transport_str);
+    ret = util_get_value_of_key(url, KEY_TRANSPORT, KEY_END_FLAG, transport_str);
     if (ret > 0) {
         info->has_transport = 1;
         strcpy(info->transport, transport_str);
@@ -57,7 +57,7 @@ static int parse_url_callback(http_parser *parser, const char *buf,
     }
 }
 
-int parse_http_request(const char *buf, int buf_len,
+int tra_parse_http_req(const char *buf, int buf_len,
                        struct http_request_info *info) {
     http_parser *parser = (http_parser *) malloc(sizeof(http_parser));
     http_parser_init(parser, HTTP_REQUEST);
@@ -67,15 +67,15 @@ int parse_http_request(const char *buf, int buf_len,
     log_debug("http_parser_execute,parsed:%d, buflen:%d\n", res, buf_len);
 }
 
-void http_parse_setting_init(void) {
+void tra_http_parse_init(void) {
     settings.on_url = parse_url_callback;
 }
 
-void websocket_response(const char *req, char *resp, int resp_len) {
+void tra_ws_resp(const char *req, char *resp, int resp_len) {
     WEBSOCKET_generate_handshake(req, resp, resp_len);
 }
 
-int get_transport_config_msg(const char *sid, char *msg) {
+int tra_get_conf(const char *sid, char *msg) {
     cJSON *root = cJSON_CreateObject();
     cJSON *upgrades_body = cJSON_CreateArray();
     cJSON_AddStringToObject(root, "sid", sid);
@@ -86,17 +86,17 @@ int get_transport_config_msg(const char *sid, char *msg) {
     cJSON_Delete(root);
 }
 
-void transport_config_init(int interval, int timeout) {
+void tra_conf_init(int interval, int timeout) {
     ping_interval = interval;
     ping_timeout = timeout;
 }
 
-int encode(sio_packet_type type, const char *data, int data_len,
-           char *encoded_data, int encoded_len) {
+int tra_encode(tra_sio_packet_type type, const char *data, int data_len,
+               char *encoded_data, int encoded_len) {
 }
 
-int eio_encode(eio_packet_type type, const char *data, int data_len,
-               char *encoded_data, int encoded_len) {
+int tra_eio_encode(tra_eio_packet_type type, const char *data, int data_len,
+                   char *encoded_data, int encoded_len) {
     if (encoded_len <= data_len)
         return -1;
 
@@ -161,8 +161,8 @@ void default_sio_packet_init(void) {
     default_sio_pong_packet_init();
 }
 
-eio_packet_type eio_decode(const char *data, int data_len) {
-    eio_packet_type etype = EIO_PACKET_ERR;
+tra_eio_packet_type eio_decode(const char *data, int data_len) {
+    tra_eio_packet_type etype = EIO_PACKET_ERR;
     char type = data[0];
     switch (type) {
         case EIO_PACKET_PING: {

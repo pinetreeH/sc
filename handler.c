@@ -13,24 +13,24 @@
 static int handle_new_connection(int fd, const char *data, int len) {
     // this is a new client, parse http request
     struct http_request_info info;
-    parse_http_request(data, len, &info);
+    tra_parse_http_req(data, len, &info);
     // new client has no sid and transport should be "websocket"
-    if (!info.has_sid && valid_transport(info.transport)) {
-        char websocket_res[WEBSOCKET_RESPONSE_MAX] = {'\0'};
+    if (!info.has_sid && tra_valid_transport(info.transport)) {
+        char websocket_res[TRA_WS_RESP_MAX] = {'\0'};
         // TODO
-        websocket_response(data, websocket_res, WEBSOCKET_RESPONSE_MAX);
-        tcp_send(fd, websocket_res, strlen(websocket_res));
+        tra_ws_resp(data, websocket_res, TRA_WS_RESP_MAX);
+        util_tcp_send(fd, websocket_res, strlen(websocket_res));
         // send {sid,upgrade,pingTimeout} ...
-        char sid[SID_STR_MAX] = {'\0'};
-        make_sid(sid);
+        char sid[TRA_SID_STR_MAX] = {'\0'};
+        util_make_sid(sid);
         char transport_config_msg[256];
-        get_transport_config_msg(sid, transport_config_msg);
+        tra_get_conf(sid, transport_config_msg);
         int config_msg_len = strlen(transport_config_msg);
         char encode_msg[TMP_MSG_MAX];
-        int encode_data_len = eio_encode(EIO_PACKET_OPEN,
-                                         transport_config_msg,
-                                         config_msg_len, encode_msg,
-                                         TMP_MSG_MAX);
+        int encode_data_len = tra_eio_encode(EIO_PACKET_OPEN,
+                                             transport_config_msg,
+                                             config_msg_len, encode_msg,
+                                             TMP_MSG_MAX);
 
         char websocket_msg[TMP_MSG_MAX];
         int websocket_msg_len = websocket_set_msg(encode_msg,
@@ -38,27 +38,27 @@ static int handle_new_connection(int fd, const char *data, int len) {
                                                   websocket_msg,
                                                   TMP_MSG_MAX);
 
-        tcp_send(fd, websocket_msg, websocket_msg_len);
+        util_tcp_send(fd, websocket_msg, websocket_msg_len);
         // after send config msg, we create a new client
-        add_new_client(fd, sid);
+        ses_add_new_client(fd, sid);
         // send CONNECT packet
-        tcp_send(fd, get_sio_connect_packet(),
-                 get_sio_connect_packet_len());
+        util_tcp_send(fd, get_sio_connect_packet(),
+                      get_sio_connect_packet_len());
     }
     return 0;
 }
 
 static int handle_eio_ping_packet(int fd) {
     // update client heartbeat
-    update_client_heartbeat_by_fd(fd);
+    ses_update_client_heartbeat_by_fd(fd);
     // send PONG packet
-    tcp_send(fd, get_sio_pong_packet(), get_sio_pong_packet_len());
+    util_tcp_send(fd, get_sio_pong_packet(), get_sio_pong_packet_len());
 
 }
 
 static int handle_eio_msg_packet(int fd, const char *data, int len) {
     char client_msg[TMP_MSG_MAX] = {'\0'};
-    int client_msg_len = get_msg_from_websocket_data(data, len, client_msg);
+    int client_msg_len = util_get_msg_from_ws_data(data, len, client_msg);
     log_debug("EIO_PACKET_MESSAGE content,len%d;%s\n", client_msg_len,
               client_msg);
 }
@@ -67,7 +67,7 @@ static int handle_client_msg(int fd, const char *data, int len) {
     char msg[TMP_MSG_MAX] = {0};
     int msg_len = websocket_get_msg(data, len, msg, TMP_MSG_MAX);
 
-    eio_packet_type etype = eio_decode(msg, msg_len);
+    tra_eio_packet_type etype = eio_decode(msg, msg_len);
     if (etype == EIO_PACKET_PING) {
         handle_eio_ping_packet(fd);
     } else if (etype == EIO_PACKET_MESSAGE) {
@@ -75,9 +75,9 @@ static int handle_client_msg(int fd, const char *data, int len) {
     }
 }
 
-int handle_recv_data(int fd, const char *data, int len) {
-    if (is_new_connection(fd, data, len)) {
-        log_debug("is_new_connection,fd:%d\n", fd);
+int hdl_recv_data(int fd, const char *data, int len) {
+    if (ses_new_connection(fd, data, len)) {
+        log_debug("ses_new_connection,fd:%d\n", fd);
         handle_new_connection(fd, data, len);
     } else {
         // exist client, parse msg by transport protocol

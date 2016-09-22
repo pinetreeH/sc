@@ -2,8 +2,8 @@
 // Created by pinetree on 16-9-21.
 //
 
-#ifndef MINHEAP_H
-#define MINHEAP_H
+#ifndef SC_MINHEAP_MINHEAP_H
+#define SC_MINHEAP_MINHEAP_H
 
 typedef int element_cmp(void *e1, void *e2);
 

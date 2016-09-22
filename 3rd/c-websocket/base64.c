@@ -48,7 +48,7 @@ int base64_encode(unsigned char *source, size_t sourcelen, char *target, size_t 
     if ((sourcelen + 2) / 3 * 4 > targetlen - 1)
         return 0;
 
-    /* encode all full triples */
+    /* tra_encode all full triples */
     while (sourcelen >= 3) {
         _base64_encode_triple(source, target);
         sourcelen -= 3;
@@ -56,7 +56,7 @@ int base64_encode(unsigned char *source, size_t sourcelen, char *target, size_t 
         target += 4;
     }
 
-    /* encode the last one or two characters */
+    /* tra_encode the last one or two characters */
     if (sourcelen > 0) {
         unsigned char temp[3];
         memset(temp, 0, sizeof(temp));

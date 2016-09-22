@@ -7,27 +7,27 @@
 
 int main(int argc, char **args) {
     struct reactor_base *base = NULL;
-    base = reactor_base_init(10);
+    base = ae_init(10);
     if (!base)
         exit(EXIT_FAILURE);
 
     int ping_interval = 10000;
     int ping_timeout = 20000;
-    transport_config_init(ping_interval, ping_timeout);
+    tra_conf_init(ping_interval, ping_timeout);
     char *ip = "127.0.0.1";
     int port = 5074;
-    int sockfd = init_socket(ip, port);
-    set_fd_nonblocking(sockfd);
-    reactor_add_net_event(base, sockfd, REACTOR_EVENT_READ,
-                          handle_server_accpet, NULL,
-                          "handle_server_accpet");
+    int sockfd = net_init_socket(ip, port);
+    util_set_fd_nonblocking(sockfd);
+    ae_add_net_event(base, sockfd, AE_EVENT_READ,
+                     net_server_accpet, NULL,
+                     "net_server_accpet");
 
-    http_parse_setting_init();
+    tra_http_parse_init();
     default_sio_packet_init();
-    session_init(10);
-    reactor_run(base);
+    ses_init(10);
+    ae_run(base);
 
-    reactor_base_delete(base);
+    ae_del(base);
 
     return EXIT_SUCCESS;
 }

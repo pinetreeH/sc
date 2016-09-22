@@ -148,7 +148,7 @@ int hashmap_set(hashmap *map, void *key, void *value) {
         rehash(map);
 
     if (find_empty_space(map, key, value, &idx) == HASHMAP_ELEMENT_FULL) {
-        log_error("after rehash, find_empty_space still FULL !\n");
+        log_err("after rehash, find_empty_space still FULL !\n");
         return HASHMAP_ERR;
     }
 

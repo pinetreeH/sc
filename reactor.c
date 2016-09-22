@@ -9,8 +9,8 @@ struct reactor_net_event {
     int mask;
     const char *read_fn_name;// for debug
     const char *write_fn_name;
-    process_fn *read_fn;
-    process_fn *write_fn;
+    ae_process_fn *read_fn;
+    ae_process_fn *write_fn;
     void *fn_parameter;
 };
 
@@ -25,7 +25,7 @@ struct reactor_base {
 };
 
 
-struct reactor_base *reactor_base_init(int capacity) {
+struct reactor_base *ae_init(int capacity) {
     struct reactor_base *base = mem_malloc(sizeof(struct reactor_base));
     do {
         if (!base) {
@@ -56,7 +56,7 @@ struct reactor_base *reactor_base_init(int capacity) {
     return base;
 }
 
-void reactor_base_delete(struct reactor_base *base) {
+void ae_del(struct reactor_base *base) {
     if (!base)
         return;
     mem_free(base->net_events);
@@ -64,14 +64,14 @@ void reactor_base_delete(struct reactor_base *base) {
     mem_free(base);
 }
 
-void reactor_stop(struct reactor_base *base) {
+void ae_stop(struct reactor_base *base) {
     base->stop = 1;
 }
 
-int reactor_add_net_event(struct reactor_base *base, int fd, int mask,
-                          process_fn *fn, void *fn_parameter,
-                          const char *fn_name) {
-    int ret = REACTOR_ERR;
+int ae_add_net_event(struct reactor_base *base, int fd, int mask,
+                     ae_process_fn *fn, void *fn_parameter,
+                     const char *fn_name) {
+    int ret = AE_ERR;
     do {
         if (fd >= base->capacity) {
             break;
@@ -81,10 +81,10 @@ int reactor_add_net_event(struct reactor_base *base, int fd, int mask,
         struct reactor_net_event *net_event = &base->net_events[fd];
         int old_mask = net_event->mask;
         int new_mask = mask | old_mask;
-        if (new_mask & REACTOR_EVENT_READ) {
+        if (new_mask & AE_EVENT_READ) {
             ep.events |= EPOLLIN;
         }
-        if (new_mask & REACTOR_EVENT_WRITE) {
+        if (new_mask & AE_EVENT_WRITE) {
             ep.events |= EPOLLOUT;
         }
         ep.data.fd = fd;
@@ -94,11 +94,11 @@ int reactor_add_net_event(struct reactor_base *base, int fd, int mask,
             break;
         }
         net_event->mask = new_mask;
-        if (mask & REACTOR_EVENT_READ) {
+        if (mask & AE_EVENT_READ) {
             net_event->read_fn = fn;
             net_event->read_fn_name = fn_name;
         }
-        if (mask & REACTOR_EVENT_WRITE) {
+        if (mask & AE_EVENT_WRITE) {
             net_event->write_fn = fn;
             net_event->write_fn_name = fn_name;
         }
@@ -106,13 +106,13 @@ int reactor_add_net_event(struct reactor_base *base, int fd, int mask,
         if (fd > base->maxfd) {
             base->maxfd = fd;
         }
-        ret = REACTOR_OK;
+        ret = AE_OK;
     } while (0);
     return ret;
 }
 
-int reactor_delete_net_event(struct reactor_base *base, int fd, int mask) {
-    int ret = REACTOR_ERR;
+int ae_del_net_event(struct reactor_base *base, int fd, int mask) {
+    int ret = AE_ERR;
     do {
         if (fd >= base->capacity) {
             break;
@@ -120,16 +120,16 @@ int reactor_delete_net_event(struct reactor_base *base, int fd, int mask) {
         struct reactor_net_event *fe = &base->net_events[fd];
         int old_mask = fe->mask;
         if (old_mask == REACTOR_EVENT_NONE) {
-            ret = REACTOR_OK;
+            ret = AE_OK;
             break;
         }
         struct epoll_event ep = {0};
         ep.events = 0;
         int new_mask = old_mask & (~mask);
-        if (new_mask & REACTOR_EVENT_READ) {
+        if (new_mask & AE_EVENT_READ) {
             ep.events |= EPOLLIN;
         }
-        if (new_mask & REACTOR_EVENT_WRITE) {
+        if (new_mask & AE_EVENT_WRITE) {
             ep.events |= EPOLLOUT;
         }
         ep.data.fd = fd;
@@ -155,7 +155,7 @@ int reactor_delete_net_event(struct reactor_base *base, int fd, int mask) {
     return ret;
 }
 
-int reactor_get_capacity(struct reactor_base *base) {
+int ae_get_capacity(struct reactor_base *base) {
     return base->capacity;
 }
 
@@ -167,26 +167,26 @@ static int reactor_process_net_event(struct reactor_base *base) {
         struct epoll_event *ep = base->ep_events + i;
         int mask = 0;
         if (ep->events & EPOLLIN) {
-            mask |= REACTOR_EVENT_READ;
+            mask |= AE_EVENT_READ;
         }
         if (ep->events & EPOLLOUT) {
-            mask |= REACTOR_EVENT_WRITE;
+            mask |= AE_EVENT_WRITE;
         }
         if (ep->events & EPOLLERR) {
-            mask |= REACTOR_EVENT_WRITE;
+            mask |= AE_EVENT_WRITE;
         }
         if (ep->events & EPOLLHUP) {
-            mask |= REACTOR_EVENT_WRITE;
+            mask |= AE_EVENT_WRITE;
         }
         int fd = ep->data.fd;
         struct reactor_net_event *net_event = base->net_events + fd;
         int read_fn_called = 0;
-        if (net_event->mask & mask & REACTOR_EVENT_READ) {
+        if (net_event->mask & mask & AE_EVENT_READ) {
             read_fn_called = 1;
             log_debug("read_fn_name:%s\n", net_event->read_fn_name);
             net_event->read_fn(base, fd, net_event->fn_parameter, mask);
         }
-        if (net_event->mask & mask & REACTOR_EVENT_WRITE) {
+        if (net_event->mask & mask & AE_EVENT_WRITE) {
             if (!read_fn_called || net_event->write_fn != net_event->read_fn) {
                 log_debug("write_fn_name:%s\n", net_event->read_fn_name);
                 net_event->write_fn(base, fd, net_event->fn_parameter, mask);
@@ -197,7 +197,7 @@ static int reactor_process_net_event(struct reactor_base *base) {
     return processed_cnt;
 }
 
-void reactor_run(struct reactor_base *base) {
+void ae_run(struct reactor_base *base) {
     if (!base) {
         return;
     }

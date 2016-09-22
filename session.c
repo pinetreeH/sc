@@ -30,7 +30,7 @@ struct session {
 
 static struct session sessions;
 
-int session_init(int capacity) {
+int ses_init(int capacity) {
     sessions.capacity = capacity;
     sessions.size = 0;
     sessions.sid_to_client = hashmap_init(capacity, hashmap_strkey_cmp,
@@ -55,7 +55,7 @@ int session_init(int capacity) {
     return 0;
 }
 
-int add_new_client(int fd, const char *sid) {
+int ses_add_new_client(int fd, const char *sid) {
     if (fd >= sessions.capacity)
         return -1;
 
@@ -64,7 +64,7 @@ int add_new_client(int fd, const char *sid) {
         return -1;
 
     c->fd = fd;
-    c->heartbeat = get_timestamp();
+    c->heartbeat = util_get_timestamp();
     strcpy(c->sid, sid);
     heap_element e;
     e.key = c->heartbeat;
@@ -81,7 +81,7 @@ int add_new_client(int fd, const char *sid) {
     return -1;
 }
 
-int delete_client_by_fd(int fd) {
+int ses_del_client_by_fd(int fd) {
     if (fd >= sessions.capacity)
         return -1;
 
@@ -94,19 +94,19 @@ int delete_client_by_fd(int fd) {
     mem_free(client);
 }
 
-int delete_client_by_sid(const char *sid) {
+int ses_del_client_by_sid(const char *sid) {
     if (!sid)
         return -1;
 
     struct client *client = NULL;
     if (hashmap_get(sessions.sid_to_client, (void *) sid, client)
         == HASHMAP_OK) {
-        return delete_client_by_fd(client->fd);
+        return ses_del_client_by_fd(client->fd);
     }
     return -1;
 }
 
-struct client *get_client_by_sid(const char *sid) {
+struct client *ses_get_client_by_sid(const char *sid) {
     if (!sid || !sessions.sid_to_client)
         return NULL;
 
@@ -115,36 +115,36 @@ struct client *get_client_by_sid(const char *sid) {
     return client;
 }
 
-struct client *get_client_by_fd(int fd) {
+struct client *ses_get_client_by_fd(int fd) {
     if (fd >= sessions.capacity)
         return NULL;
 
     return sessions.fd_to_client[fd].client;
 }
 
-int get_min_time(void) {
+int ses_get_min_time(void) {
     heap_element e = minheap_get_top(sessions.heartbeat);
     if (e.key > 0)
         return e.key;
 
 }
 
-int is_new_connection(int fd, const char *data, int data_len) {
+int ses_new_connection(int fd, const char *data, int data_len) {
     // parse data by protocol
-    NOTUSED_PARAMETER(data);
-    NOTUSED_PARAMETER(data_len);
+    UTIL_NOTUSED(data);
+    UTIL_NOTUSED(data_len);
 
-    if (!get_client_by_fd(fd))
+    if (!ses_get_client_by_fd(fd))
         return 1;
     return 0;
 }
 
-int update_client_heartbeat_by_fd(int fd) {
+int ses_update_client_heartbeat_by_fd(int fd) {
     struct client *c = sessions.fd_to_client[fd].client;
     if (!c)
         return 0;
 
-    c->heartbeat = get_timestamp();
+    c->heartbeat = util_get_timestamp();
     c->heartbeat_in_sesssion = minheap_update(sessions.heartbeat,
                                               c->heartbeat_in_sesssion,
                                               c->heartbeat);

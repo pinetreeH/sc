@@ -25,7 +25,7 @@ void log_debug(const char *fmt, ...) {
     printf("%s> %s\n", prefix, msg);
 }
 
-void logInfo(const char *fmt, ...) {
+void log_info(const char *fmt, ...) {
     char msg[LOG_MSG_MAX_LEN];
     va_list args;
     va_start (args, fmt);
@@ -35,7 +35,7 @@ void logInfo(const char *fmt, ...) {
     printf("%s> %s\n", prefix, msg);
 }
 
-void log_error(const char *fmt, ...) {
+void log_err(const char *fmt, ...) {
     char msg[LOG_MSG_MAX_LEN];
     va_list args;
     va_start (args, fmt);
@@ -47,8 +47,8 @@ void log_error(const char *fmt, ...) {
 
 
 // test: /socket.io/?EIO=3&transport=polling&t=1473479272828-0
-int get_value_of_key(const char *str, const char *key, const char end_flag,
-                     char *value) {
+int util_get_value_of_key(const char *str, const char *key, const char end_flag,
+                          char *value) {
     int idx = 0;
     char *i = NULL;
     if ((i = strstr(str, key)) != NULL) {
@@ -63,11 +63,11 @@ int get_value_of_key(const char *str, const char *key, const char end_flag,
     return idx;
 }
 
-int get_timestamp(void) {
+int util_get_timestamp(void) {
     return time(NULL);
 }
 
-int make_sid(char *sid) {
+int util_make_sid(char *sid) {
     strcpy(sid, "magic_sid");
 }
 
@@ -86,25 +86,25 @@ void *mem_calloc(int num, int size) {
     return calloc(num, size);
 }
 
-int tcp_send(int fd, const char *data, int len) {
+int util_tcp_send(int fd, const char *data, int len) {
     return send(fd, data, len, 0);
 }
 
-int tcp_recv(int fd, char *data, int len) {
+int util_tcp_recv(int fd, char *data, int len) {
     return recv(fd, data, len, 0);
 }
 
 
-void set_fd_nonblocking(int fd) {
+void util_set_fd_nonblocking(int fd) {
     int old_opt = fcntl(fd, F_GETFL);
     int new_opt = old_opt | O_NONBLOCK;
     fcntl(fd, F_SETFL, new_opt);
 }
 
-int get_msg_from_websocket_data(const char *websocket_data, int len, char *dst) {
+int util_get_msg_from_ws_data(const char *ws_data, int len, char *dst) {
     for (int i = 0; i < len; i++) {
-        if (websocket_data[i] == '[') {
-            memcpy(dst, &websocket_data[i], len - i);
+        if (ws_data[i] == '[') {
+            memcpy(dst, &ws_data[i], len - i);
             return len - i;
         }
     }
