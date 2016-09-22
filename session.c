@@ -4,9 +4,29 @@
 
 #include "session.h"
 #include "util.h"
-#include <stdlib.h>
 #include <string.h>
 
+#define CLIENT_SID_MAX 32
+
+struct client {
+    char sid[CLIENT_SID_MAX];
+    int fd;
+    int heartbeat;
+    heap_element *heartbeat_in_sesssion;
+};
+
+struct fd_client {
+    int fd;
+    struct client *client;
+};
+
+struct session {
+    int capacity;
+    int size;
+    struct fd_client *fd_to_client;// array
+    hashmap *sid_to_client; // sid is a string
+    heap *heartbeat;
+};
 
 static struct session sessions;
 
@@ -30,7 +50,6 @@ int session_init(int capacity) {
         mem_free(sessions.fd_to_client);
         return -1;
     }
-
 
     return 0;
 }
@@ -103,7 +122,10 @@ struct client *get_client_by_fd(int fd) {
 }
 
 int get_min_time(void) {
-    return 1000;
+    heap_element e = minheap_get_top(sessions.heartbeat);
+    if (e.key > 0)
+        return e.key;
+
 }
 
 int is_new_connection(int fd, const char *data, int data_len) {

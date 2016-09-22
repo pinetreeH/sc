@@ -24,25 +24,6 @@ struct reactor_base;
 typedef void process_fn(struct reactor_base *eventLoop,
                         int fd, void *fn_parameter, int mask);
 
-struct reactor_net_event {
-    int mask;
-    const char *read_fn_name;// for debug
-    const char *write_fn_name;
-    process_fn *read_fn;
-    process_fn *write_fn;
-    void *fn_parameter;
-};
-
-
-struct reactor_base {
-    int maxfd;
-    int capacity;
-    struct reactor_net_event *net_events;
-    int stop;
-    int epfd;
-    struct epoll_event *ep_events;
-};
-
 struct reactor_base *reactor_base_init(int capacity);
 
 void reactor_base_delete(struct reactor_base *base);

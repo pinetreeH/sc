@@ -5,7 +5,7 @@
 #ifndef NET_H
 #define NET_H
 
-#include "reactor.h"
+struct reactor_base;
 
 int init_socket(char *ip, int port);
 

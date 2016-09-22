@@ -93,3 +93,7 @@ heap_element *minheap_update(heap *h, heap_element *e, int newkey) {
     else
         return minheap_reorder_up(h, idx);
 }
+
+extern heap_element minheap_get_top(heap *h) {
+    return h->elements[0];
+}

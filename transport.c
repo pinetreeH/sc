@@ -183,3 +183,7 @@ eio_packet_type eio_decode(const char *data, int data_len) {
     return etype;
 }
 
+int get_ping_timeout(void) {
+    return ping_timeout;
+}
+

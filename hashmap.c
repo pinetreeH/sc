@@ -6,10 +6,26 @@
 #include "util.h"
 #include "memory.h"
 #include <stdlib.h>
-#include <string.h>
+#include <stdint.h>
 
 #define MAX_CHAIN_LENGTH 8
 #define HASHMAP_DEFAULT_CAPACITY 128
+
+typedef struct _hashmap_element {
+    void *key;
+    void *value;
+} hashmap_element;
+
+struct hashmap {
+    int capacity;
+    int size;
+    hashmap_element *elements;
+    hashmap_key_cmp *key_cmp_fn;
+    hashmap_value_cmp *value_cmp_fn;
+    hashmap_free_key *free_key_fn;
+    hashmap_free_value *free_value_fn;
+    hashmap_key_index *key_index_fn;
+};
 
 static uint64_t crc32_tab[] = {
         0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,

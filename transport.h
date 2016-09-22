@@ -75,4 +75,6 @@ const char *get_sio_pong_packet(void);
 
 int get_sio_pong_packet_len(void);
 
+int get_ping_timeout(void);
+
 #endif

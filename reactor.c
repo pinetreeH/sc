@@ -4,7 +4,26 @@
 
 #include "reactor.h"
 #include "util.h"
-#include "session.h"
+
+struct reactor_net_event {
+    int mask;
+    const char *read_fn_name;// for debug
+    const char *write_fn_name;
+    process_fn *read_fn;
+    process_fn *write_fn;
+    void *fn_parameter;
+};
+
+
+struct reactor_base {
+    int maxfd;
+    int capacity;
+    struct reactor_net_event *net_events;
+    int stop;
+    int epoll_fd;
+    struct epoll_event *ep_events;
+};
+
 
 struct reactor_base *reactor_base_init(int capacity) {
     struct reactor_base *base = mem_malloc(sizeof(struct reactor_base));
@@ -12,7 +31,8 @@ struct reactor_base *reactor_base_init(int capacity) {
         if (!base) {
             break;
         }
-        base->net_events = mem_malloc(sizeof(struct reactor_net_event) * capacity);
+        base->net_events = mem_malloc(sizeof(struct reactor_net_event) *
+                                      capacity);
         if (!base->net_events) {
             mem_free(base);
             break;
@@ -20,8 +40,8 @@ struct reactor_base *reactor_base_init(int capacity) {
         base->maxfd = -1;
         base->capacity = capacity;
         base->stop = 0;
-        base->epfd = epoll_create(1024);
-        if (base->epfd <= 0) {
+        base->epoll_fd = epoll_create(1024);
+        if (base->epoll_fd <= 0) {
             mem_free(base->net_events);
             mem_free(base);
             break;
@@ -70,7 +90,7 @@ int reactor_add_net_event(struct reactor_base *base, int fd, int mask,
         ep.data.fd = fd;
         int op = (old_mask == REACTOR_EVENT_NONE ? EPOLL_CTL_ADD :
                   EPOLL_CTL_MOD);
-        if (epoll_ctl(base->epfd, op, fd, &ep) == -1) {
+        if (epoll_ctl(base->epoll_fd, op, fd, &ep) == -1) {
             break;
         }
         net_event->mask = new_mask;
@@ -115,7 +135,7 @@ int reactor_delete_net_event(struct reactor_base *base, int fd, int mask) {
         ep.data.fd = fd;
         int op = (new_mask == REACTOR_EVENT_NONE ? EPOLL_CTL_DEL :
                   EPOLL_CTL_MOD);
-        if (epoll_ctl(base->epfd, op, fd, &ep) == -1) {
+        if (epoll_ctl(base->epoll_fd, op, fd, &ep) == -1) {
             break;
         }
         fe->mask = new_mask;
@@ -142,7 +162,7 @@ int reactor_get_capacity(struct reactor_base *base) {
 static int reactor_process_net_event(struct reactor_base *base) {
     int processed_cnt = 0;
     int min_time = get_min_time();
-    int fds = epoll_wait(base->epfd, base->ep_events, base->capacity, min_time);
+    int fds = epoll_wait(base->epoll_fd, base->ep_events, base->capacity, min_time);
     for (int i = 0; i < fds; i++) {
         struct epoll_event *ep = base->ep_events + i;
         int mask = 0;

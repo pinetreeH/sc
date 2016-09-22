@@ -3,6 +3,7 @@
 //
 
 #include "netevent.h"
+#include "reactor.h"
 #include "handler.h"
 #include "util.h"
 #include <unistd.h>
