@@ -15,14 +15,14 @@ typedef struct _heap {
     int size;
     heap_element *elements;
 
-} minheap;
+} heap;
 
-extern minheap *minheap_init(int capacity);
+extern heap *minheap_init(int capacity);
 
-extern int minheap_insert(minheap *h, heap_element e);
+extern heap_element *minheap_insert(heap *h, heap_element e);
 
-extern int minheap_pop(minheap *h, heap_element *e);
+extern int minheap_pop(heap *h, heap_element *e);
 
-extern int minheap_update_add(minheap *h, heap_element *e, int add);
+extern heap_element *minheap_update(heap *h, heap_element *e, int newkey);
 
 #endif

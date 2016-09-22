@@ -17,12 +17,20 @@ int session_init(int capacity) {
                                           NULL, NULL, hashmap_strkey_hashindex);
     sessions.fd_to_client = mem_calloc(capacity, sizeof(struct fd_client));
 
+    sessions.heartbeat = minheap_init(capacity);
+
     if (!sessions.sid_to_client)
         return -1;
     if (!sessions.fd_to_client) {
         mem_free(sessions.sid_to_client);
         return -1;
     }
+    if (!sessions.heartbeat) {
+        mem_free(sessions.sid_to_client);
+        mem_free(sessions.fd_to_client);
+        return -1;
+    }
+
 
     return 0;
 }
@@ -38,6 +46,10 @@ int add_new_client(int fd, const char *sid) {
     c->fd = fd;
     c->heartbeat = get_timestamp();
     strcpy(c->sid, sid);
+    heap_element e;
+    e.key = c->heartbeat;
+    e.data = c;
+    c->heartbeat_in_sesssion = minheap_insert(sessions.heartbeat, e);
 
     sessions.fd_to_client[fd].fd = fd;
     sessions.fd_to_client[fd].client = c;
@@ -105,5 +117,12 @@ int is_new_connection(int fd, const char *data, int data_len) {
 }
 
 int update_client_heartbeat_by_fd(int fd) {
+    struct client *c = sessions.fd_to_client[fd].client;
+    if (!c)
+        return 0;
 
+    c->heartbeat = get_timestamp();
+    c->heartbeat_in_sesssion = minheap_update(sessions.heartbeat,
+                                              c->heartbeat_in_sesssion,
+                                              c->heartbeat);
 }
