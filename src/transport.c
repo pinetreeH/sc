@@ -111,23 +111,23 @@ int tra_eio_encode(tra_eio_packet_type type, const char *data, int data_len,
     return encode_idx;
 }
 
-int websocket_set_msg(const char *data, int data_len, char *dst, int dst_len) {
+int tra_ws_set_content(const char *data, int data_len, char *dst, int dst_len) {
     return WEBSOCKET_set_content(data, data_len, dst, dst_len);
 }
 
-int websocket_get_msg(const char *data, int data_len, char *dst, int dst_len) {
+int tra_ws_get_content(const char *data, int data_len, char *dst, int dst_len) {
     return WEBSOCKET_get_content(data, data_len, dst, dst_len);
 }
 
-inline const char *get_sio_connect_packet(void) {
+inline const char *tra_get_sio_connect_packet(void) {
     return sio_connect_packet;
 }
 
-inline int get_sio_connect_packet_len(void) {
+inline int tra_get_sio_connect_packet_len(void) {
     return sio_connect_packet_len;
 }
 
-const char *get_sio_pong_packet(void) {
+const char *tra_get_sio_pong_packet(void) {
     return sio_pong_packet;
 }
 
@@ -156,7 +156,7 @@ static void default_sio_pong_packet_init(void) {
     memcpy(sio_pong_packet, websocket_msg, sio_pong_packet_len);
 }
 
-void default_sio_packet_init(void) {
+void tra_default_sio_packet_init(void) {
     default_sio_connect_packet_init();
     default_sio_pong_packet_init();
 }
@@ -183,7 +183,7 @@ tra_eio_packet_type eio_decode(const char *data, int data_len) {
     return etype;
 }
 
-int get_ping_timeout(void) {
+int tra_get_ping_timeout(void) {
     return ping_timeout;
 }
 

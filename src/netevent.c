@@ -15,13 +15,6 @@
 #define TCP_MSG_BUF_LEN 1024
 #define TMP_MSG_MAX 512
 
-static inline void show_ip_port(struct sockaddr_in *sockfd) {
-    char ip[INET_ADDRSTRLEN] = {0};
-    log_debug("client ip:%s,port:%d\n",
-              inet_ntop(AF_INET, &sockfd->sin_addr, ip, INET_ADDRSTRLEN),
-              ntohs(sockfd->sin_port));
-}
-
 static void handle_tcp_recv(struct reactor_base *base, int fd,
                             void *fn_parameter, int mask) {
     UTIL_NOTUSED(base);
@@ -30,12 +23,19 @@ static void handle_tcp_recv(struct reactor_base *base, int fd,
 
     char buf[TCP_MSG_BUF_LEN] = {'\0'};
     int buf_len = util_tcp_recv(fd, buf, TCP_MSG_BUF_LEN);
-    if (buf_len <= 0) {
-        log_err("handleTcpRecv_recv buf_len<=0,%d\n", buf_len);
-        exit(EXIT_FAILURE);
+    if (buf_len == 0) {
+        log_debug("handleTcpRecv_recv buf_len==0\n");
+        // close fd and client
+        ae_del_net_event(base,fd,AE_NET_EVENT_READ|AE_NET_EVENT_WRITE);
+        hdl_recv_close(fd);
+    }else if(buf_len <0 ){
+        log_debug("handleTcpRecv_recv buf_len<0,%d\n", buf_len);
+        ae_del_net_event(base,fd,AE_NET_EVENT_READ|AE_NET_EVENT_WRITE);
+        hdl_recv_err(fd);
+    } else{
+        log_debug("handleTcpRecv_recv:%d,%s\n", buf_len, buf);
+        hdl_recv_data(fd, buf, buf_len);
     }
-    log_debug("handleTcpRecv_recv:%d,%s\n", buf_len, buf);
-    hdl_recv_data(fd, buf, buf_len);
 }
 
 
@@ -76,9 +76,8 @@ void net_server_accpet(struct reactor_base *base, int fd, void *fd_parameter,
     socklen_t clientaddr_len = sizeof(clientaddr);
     int connfd = accept(fd, (struct sockaddr *) &clientaddr, &clientaddr_len);
     log_debug("net_server_accpet connfd:%d\n", connfd);
-    show_ip_port(&clientaddr);
     util_set_fd_nonblocking(connfd);
-    ae_add_net_event(base, connfd, AE_EVENT_READ, handle_tcp_recv,
+    ae_add_net_event(base, connfd, AE_NET_EVENT_READ, handle_tcp_recv,
                      NULL, "handle_tcp_recv");
 }
 

@@ -7,10 +7,14 @@
 #include "hashmap.h"
 #include "minheap.h"
 #include <string.h>
+#include <arpa/inet.h>
 
-#define CLIENT_SID_MAX 32
+#define CLIENT_SID_MAX 48
 
 struct client {
+    // TODO ipv6
+    char ip[INET_ADDRSTRLEN];
+    int port;
     char sid[CLIENT_SID_MAX];
     int fd;
     int heartbeat;
@@ -61,13 +65,16 @@ int ses_add_new_client(int fd, const char *sid) {
     if (fd >= sessions.capacity)
         return -1;
 
+    log_debug("ses_add_new_client,fd:%d,sid:%s\n",fd,sid);
+
     struct client *c = mem_malloc(sizeof(struct client));
     if (!c)
         return -1;
 
     c->fd = fd;
+    strcpy(c->sid,sid);
     c->heartbeat = util_get_timestamp();
-    strcpy(c->sid, sid);
+    util_get_fd_ip_port(fd,c->ip,&c->port);
     c->heartbeat_in_ses = heap_insert(sessions.heartbeat,
                                       (void *) &c->heartbeat, (void *) c);
 
@@ -90,6 +97,12 @@ int ses_del_client_by_fd(int fd) {
     sessions.fd_to_client[fd].client = NULL;
 
     hashmap_delete(sessions.sid_to_client, (void *) client->sid, 0, 0);
+
+    int heartbeat = -1;
+    minheap_update(sessions.heartbeat, client->heartbeat_in_ses, &heartbeat,
+                   minheap_key_update);
+
+    log_debug("ses_del_client_by_fd,fd:%d,sid:%s\n",fd,client->sid);
 
     mem_free(client);
 }
@@ -125,7 +138,7 @@ struct client *ses_get_client_by_fd(int fd) {
 int ses_get_min_time(void) {
     int *timestamp = NULL;
     struct client *c = NULL;
-    heap_get_root(sessions.heartbeat, (void**)&timestamp,(void**) &c);
+    heap_get_root(sessions.heartbeat, (void **) &timestamp, (void **) &c);
     // TODO
     return 10000;
 }

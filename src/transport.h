@@ -5,7 +5,7 @@
 #ifndef SC_TRANSPORT_TRA_H
 #define SC_TRANSPORT_TRA_H
 
-#define TRA_SID_STR_MAX 32
+#define TRA_SID_STR_MAX 48
 #define TRA_STR_MAX 32
 #define TRA_WS_RESP_MAX 1024
 
@@ -30,7 +30,6 @@ typedef enum _sio_packet_type {
     SIO_PACKET_BINARY_EVENT = '5',
     SIO_PACKET_BINARY_ACK = '6'
 } tra_sio_packet_type;
-
 
 struct http_request_info {
     char sid[TRA_SID_STR_MAX];
@@ -61,22 +60,22 @@ extern int tra_eio_encode(tra_eio_packet_type type, const char *data, int data_l
 
 extern tra_eio_packet_type eio_decode(const char *data, int data_len);
 
-extern int websocket_set_msg(const char *data, int data_len, char *dst,
-                             int dst_len);
+extern int tra_ws_set_content(const char *data, int data_len, char *dst,
+                              int dst_len);
 
-extern int websocket_get_msg(const char *data, int data_len, char *dst,
-                             int dst_len);
+extern int tra_ws_get_content(const char *data, int data_len, char *dst,
+                              int dst_len);
 
-extern void default_sio_packet_init(void);
+extern void tra_default_sio_packet_init(void);
 
-extern const char *get_sio_connect_packet(void);
+extern const char *tra_get_sio_connect_packet(void);
 
-extern int get_sio_connect_packet_len(void);
+extern int tra_get_sio_connect_packet_len(void);
 
-extern const char *get_sio_pong_packet(void);
+extern const char *tra_get_sio_pong_packet(void);
 
-extern int get_sio_pong_packet_len(void);
+extern int tra_get_sio_pong_packet_len(void);
 
-extern int get_ping_timeout(void);
+extern int tra_get_ping_timeout(void);
 
 #endif

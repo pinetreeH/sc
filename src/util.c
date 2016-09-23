@@ -12,6 +12,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define LOG_MSG_MAX_LEN  1024
 
@@ -67,8 +69,15 @@ int util_get_timestamp(void) {
     return time(NULL);
 }
 
-int util_make_sid(char *sid) {
-    strcpy(sid, "magic_sid");
+int util_gen_sid_by_fd(int fd,char *sid) {
+    int port = 0;
+    char ip[INET_ADDRSTRLEN] = {'\0'};
+    util_get_fd_ip_port(fd,ip,&port);
+    strcpy(sid,ip);
+    strcat(sid,":");
+    char port_str[10] = {0};
+    snprintf(port_str,sizeof(port_str),"%d",port);
+    strcat(sid,port_str);
 }
 
 void *mem_malloc(int size) {
@@ -109,4 +118,16 @@ int util_get_msg_from_ws_data(const char *ws_data, int len, char *dst) {
         }
     }
     return 0;
+}
+
+int util_get_fd_ip_port(int fd,char *ip,int *port){
+    struct sockaddr addr;
+    socklen_t len = sizeof(struct sockaddr);
+    if(getpeername(fd,&addr,&len) != -1){
+        struct sockaddr_in *sin = (struct sockaddr_in*)(&addr);
+        inet_ntop(AF_INET, &sin->sin_addr, ip, INET_ADDRSTRLEN);
+        *port = ntohs(sin->sin_port);
+        return 0;
+    }
+    return -1;
 }

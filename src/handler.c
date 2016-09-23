@@ -22,7 +22,7 @@ static int handle_new_connection(int fd, const char *data, int len) {
         util_tcp_send(fd, websocket_res, strlen(websocket_res));
         // send {sid,upgrade,pingTimeout} ...
         char sid[TRA_SID_STR_MAX] = {'\0'};
-        util_make_sid(sid);
+        util_gen_sid_by_fd(fd,sid);
         char transport_config_msg[256];
         tra_get_conf(sid, transport_config_msg);
         int config_msg_len = strlen(transport_config_msg);
@@ -33,17 +33,17 @@ static int handle_new_connection(int fd, const char *data, int len) {
                                              TMP_MSG_MAX);
 
         char websocket_msg[TMP_MSG_MAX];
-        int websocket_msg_len = websocket_set_msg(encode_msg,
-                                                  encode_data_len,
-                                                  websocket_msg,
-                                                  TMP_MSG_MAX);
+        int websocket_msg_len = tra_ws_set_content(encode_msg,
+                                                   encode_data_len,
+                                                   websocket_msg,
+                                                   TMP_MSG_MAX);
 
         util_tcp_send(fd, websocket_msg, websocket_msg_len);
         // after send config msg, we create a new client
-        ses_add_new_client(fd, sid);
+        ses_add_new_client(fd,sid);
         // send CONNECT packet
-        util_tcp_send(fd, get_sio_connect_packet(),
-                      get_sio_connect_packet_len());
+        util_tcp_send(fd, tra_get_sio_connect_packet(),
+                      tra_get_sio_connect_packet_len());
     }
     return 0;
 }
@@ -52,7 +52,7 @@ static int handle_eio_ping_packet(int fd) {
     // update client heartbeat
     ses_update_client_heartbeat_by_fd(fd);
     // send PONG packet
-    util_tcp_send(fd, get_sio_pong_packet(), get_sio_pong_packet_len());
+    util_tcp_send(fd, tra_get_sio_pong_packet(), get_sio_pong_packet_len());
 
 }
 
@@ -65,7 +65,7 @@ static int handle_eio_msg_packet(int fd, const char *data, int len) {
 
 static int handle_client_msg(int fd, const char *data, int len) {
     char msg[TMP_MSG_MAX] = {0};
-    int msg_len = websocket_get_msg(data, len, msg, TMP_MSG_MAX);
+    int msg_len = tra_ws_get_content(data, len, msg, TMP_MSG_MAX);
 
     tra_eio_packet_type etype = eio_decode(msg, msg_len);
     if (etype == EIO_PACKET_PING) {
@@ -84,4 +84,12 @@ int hdl_recv_data(int fd, const char *data, int len) {
         log_debug("exist client,fd:%d\n", fd);
         handle_client_msg(fd, data, len);
     }
+}
+
+int hdl_recv_close(int fd){
+    return ses_del_client_by_fd(fd);
+}
+
+extern int hdl_recv_err(int fd){
+    return ses_del_client_by_fd(fd);
 }

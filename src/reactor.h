@@ -11,10 +11,10 @@
 #define AE_ERR -1
 
 #define AE_EVENT_NONE 0
-#define AE_EVENT_READ 1
-#define AE_EVENT_WRITE 2
-#define AE_NET_EVENT 1
-#define AE_TIME_EVENT 2
+#define AE_NET_EVENT_READ 1
+#define AE_NET_EVENT_WRITE 2
+#define AE_NET_EVENT 3
+#define AE_TIME_EVENT 4
 #define AE_ALL_EVNET (AE_NET_EVENT|AE_TIME_EVENT)
 
 struct reactor_base;

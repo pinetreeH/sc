@@ -81,10 +81,10 @@ int ae_add_net_event(struct reactor_base *base, int fd, int mask,
         struct reactor_net_event *net_event = &base->net_events[fd];
         int old_mask = net_event->mask;
         int new_mask = mask | old_mask;
-        if (new_mask & AE_EVENT_READ) {
+        if (new_mask & AE_NET_EVENT_READ) {
             ep.events |= EPOLLIN;
         }
-        if (new_mask & AE_EVENT_WRITE) {
+        if (new_mask & AE_NET_EVENT_WRITE) {
             ep.events |= EPOLLOUT;
         }
         ep.data.fd = fd;
@@ -94,11 +94,11 @@ int ae_add_net_event(struct reactor_base *base, int fd, int mask,
             break;
         }
         net_event->mask = new_mask;
-        if (mask & AE_EVENT_READ) {
+        if (mask & AE_NET_EVENT_READ) {
             net_event->read_fn = fn;
             net_event->read_fn_name = fn_name;
         }
-        if (mask & AE_EVENT_WRITE) {
+        if (mask & AE_NET_EVENT_WRITE) {
             net_event->write_fn = fn;
             net_event->write_fn_name = fn_name;
         }
@@ -126,10 +126,10 @@ int ae_del_net_event(struct reactor_base *base, int fd, int mask) {
         struct epoll_event ep = {0};
         ep.events = 0;
         int new_mask = old_mask & (~mask);
-        if (new_mask & AE_EVENT_READ) {
+        if (new_mask & AE_NET_EVENT_READ) {
             ep.events |= EPOLLIN;
         }
-        if (new_mask & AE_EVENT_WRITE) {
+        if (new_mask & AE_NET_EVENT_WRITE) {
             ep.events |= EPOLLOUT;
         }
         ep.data.fd = fd;
@@ -168,26 +168,26 @@ static int reactor_process_net_event(struct reactor_base *base) {
         struct epoll_event *ep = base->ep_events + i;
         int mask = 0;
         if (ep->events & EPOLLIN) {
-            mask |= AE_EVENT_READ;
+            mask |= AE_NET_EVENT_READ;
         }
         if (ep->events & EPOLLOUT) {
-            mask |= AE_EVENT_WRITE;
+            mask |= AE_NET_EVENT_WRITE;
         }
         if (ep->events & EPOLLERR) {
-            mask |= AE_EVENT_WRITE;
+            mask |= AE_NET_EVENT_WRITE;
         }
         if (ep->events & EPOLLHUP) {
-            mask |= AE_EVENT_WRITE;
+            mask |= AE_NET_EVENT_WRITE;
         }
         int fd = ep->data.fd;
         struct reactor_net_event *net_event = base->net_events + fd;
         int read_fn_called = 0;
-        if (net_event->mask & mask & AE_EVENT_READ) {
+        if (net_event->mask & mask & AE_NET_EVENT_READ) {
             read_fn_called = 1;
             log_debug("read_fn_name:%s\n", net_event->read_fn_name);
             net_event->read_fn(base, fd, net_event->fn_parameter, mask);
         }
-        if (net_event->mask & mask & AE_EVENT_WRITE) {
+        if (net_event->mask & mask & AE_NET_EVENT_WRITE) {
             if (!read_fn_called || net_event->write_fn != net_event->read_fn) {
                 log_debug("write_fn_name:%s\n", net_event->read_fn_name);
                 net_event->write_fn(base, fd, net_event->fn_parameter, mask);

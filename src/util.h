@@ -18,7 +18,7 @@ extern int util_get_value_of_key(const char *str, const char *key,
 
 extern int util_get_timestamp(void);
 
-extern int util_make_sid(char *sid);
+extern int util_gen_sid_by_fd(int fd, char *sid);
 
 extern void *mem_malloc(int size);
 
@@ -34,5 +34,7 @@ extern void util_set_fd_nonblocking(int fd);
 
 extern int util_get_msg_from_ws_data(const char *ws_data, int len,
                                      char *dst);
+
+extern int util_get_fd_ip_port(int fd,char *ip,int *port);
 
 #endif
