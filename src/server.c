@@ -2,8 +2,25 @@
 #include "netevent.h"
 #include "session.h"
 #include "transport.h"
+#include "handler.h"
+#include "handler_if.h"
 #include "util.h"
 #include <stdlib.h>
+
+// example function declare
+static void sc_on_connect(int fd, const char *data, int len);
+
+static void sc_on_disconnect(int fd, const char *data, int len);
+
+static void sc_on_event(int fd, const char *data, int len);
+
+static void sc_on_ack(int fd, const char *data, int len);
+
+static void sc_on_error(int fd, const char *data, int len);
+
+static void sc_on_binary_event(int fd, const char *data, int len);
+
+static void sc_on_binary_ack(int fd, const char *data, int len);
 
 int main(int argc, char **args) {
     struct reactor_base *base = NULL;
@@ -25,9 +42,48 @@ int main(int argc, char **args) {
     tra_http_parse_init();
     tra_default_sio_packet_init();
     ses_init(10);
-    ae_run(base);
 
+    struct handler_if msg_handler;
+    msg_handler.on_connect = sc_on_connect;
+    msg_handler.on_disconnect = sc_on_disconnect;
+    msg_handler.on_event = sc_on_event;
+    msg_handler.on_ack = sc_on_ack;
+    msg_handler.on_error = sc_on_error;
+    msg_handler.on_binary_event = sc_on_binary_event;
+    msg_handler.on_binary_ack = sc_on_binary_ack;
+    hdl_register_handler(NULL, &msg_handler);
+
+    ae_run(base);
     ae_del(base);
 
     return EXIT_SUCCESS;
 }
+
+void sc_on_connect(int fd, const char *data, int len) {
+    log_debug("socket.io connect packet, fd:%d, data:%s", fd, data);
+}
+
+void sc_on_disconnect(int fd, const char *data, int len) {
+    log_debug("socket.io disconnect packet, fd:%d, data:%s\n", fd, data);
+}
+
+void sc_on_event(int fd, const char *data, int len) {
+    log_debug("socket.io event packet, fd:%d, data:%s\n", fd, data);
+}
+
+void sc_on_ack(int fd, const char *data, int len) {
+    log_debug("socket.io ack packet, fd:%d, data:%s\n", fd, data);
+}
+
+void sc_on_error(int fd, const char *data, int len) {
+    log_debug("socket.io error packet, fd:%d, data:%s\n", fd, data);
+}
+
+void sc_on_binary_event(int fd, const char *data, int len) {
+    log_debug("socket.io binary event packet, fd:%d, data:%s\n", fd, data);
+}
+
+void sc_on_binary_ack(int fd, const char *data, int len) {
+    log_debug("socket.io binary ack packet, fd:%d, data:%s\n", fd, data);
+}
+

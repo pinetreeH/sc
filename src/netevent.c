@@ -13,7 +13,6 @@
 #include <stdlib.h>
 
 #define TCP_MSG_BUF_LEN 1024
-#define TMP_MSG_MAX 512
 
 static void handle_tcp_recv(struct reactor_base *base, int fd,
                             void *fn_parameter, int mask) {
@@ -37,7 +36,6 @@ static void handle_tcp_recv(struct reactor_base *base, int fd,
         hdl_recv_data(fd, buf, buf_len);
     }
 }
-
 
 int net_init_socket(char *ip, int port) {
     struct sockaddr_in addr;

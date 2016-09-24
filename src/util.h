@@ -32,9 +32,6 @@ extern int util_tcp_recv(int fd, char *data, int len);
 
 extern void util_set_fd_nonblocking(int fd);
 
-extern int util_get_msg_from_ws_data(const char *ws_data, int len,
-                                     char *dst);
-
 extern int util_get_fd_ip_port(int fd,char *ip,int *port);
 
 #endif

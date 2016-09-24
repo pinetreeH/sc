@@ -110,16 +110,6 @@ void util_set_fd_nonblocking(int fd) {
     fcntl(fd, F_SETFL, new_opt);
 }
 
-int util_get_msg_from_ws_data(const char *ws_data, int len, char *dst) {
-    for (int i = 0; i < len; i++) {
-        if (ws_data[i] == '[') {
-            memcpy(dst, &ws_data[i], len - i);
-            return len - i;
-        }
-    }
-    return 0;
-}
-
 int util_get_fd_ip_port(int fd,char *ip,int *port){
     struct sockaddr addr;
     socklen_t len = sizeof(struct sockaddr);

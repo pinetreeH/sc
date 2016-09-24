@@ -20,6 +20,26 @@
 
 #define TRANSPORT_WEBSOCKET "websocket"
 
+enum eio_packet_type {
+    EIO_PACKET_OPEN = '0',
+    EIO_PACKET_CLOSE = '1',
+    EIO_PACKET_PING = '2',
+    EIO_PACKET_PONG = '3',
+    EIO_PACKET_MESSAGE = '4',
+    EIO_PACKET_UPGRADE = '5',
+    EIO_PACKET_NOOP = '6'
+};
+
+enum sio_packet_type {
+    SIO_PACKET_CONNECT = '0',
+    SIO_PACKET_DISCONNECT = '1',
+    SIO_PACKET_EVENT = '2',
+    SIO_PACKET_ACK = '3',
+    SIO_PACKET_ERROR = '4',
+    SIO_PACKET_BINARY_EVENT = '5',
+    SIO_PACKET_BINARY_ACK = '6'
+};
+
 static http_parser_settings settings;
 static int ping_interval;
 static int ping_timeout;
@@ -49,7 +69,8 @@ static int parse_url_callback(http_parser *parser, const char *buf,
     }
     // get transport
     char transport_str[STR_MAX_LEN] = {'\0'};
-    ret = util_get_value_of_key(url, KEY_TRANSPORT, KEY_END_FLAG, transport_str);
+    ret = util_get_value_of_key(url, KEY_TRANSPORT, KEY_END_FLAG,
+                                transport_str);
     if (ret > 0) {
         info->has_transport = 1;
         strcpy(info->transport, transport_str);
@@ -101,7 +122,7 @@ int tra_eio_encode(tra_eio_packet_type type, const char *data, int data_len,
         return -1;
 
     int encode_idx = 0;
-    if (type == EIO_PACKET_OPEN) {
+    if (type == TRA_EIO_PACKET_OPEN) {
         encoded_data[encode_idx++] = EIO_PACKET_OPEN;
         for (int i = 0; i < data_len; i++) {
             encoded_data[encode_idx++] = data[i];
@@ -131,7 +152,7 @@ const char *tra_get_sio_pong_packet(void) {
     return sio_pong_packet;
 }
 
-int get_sio_pong_packet_len(void) {
+int tra_get_sio_pong_packet_len(void) {
     return sio_pong_packet_len;
 }
 
@@ -161,26 +182,66 @@ void tra_default_sio_packet_init(void) {
     default_sio_pong_packet_init();
 }
 
-tra_eio_packet_type eio_decode(const char *data, int data_len) {
-    tra_eio_packet_type etype = EIO_PACKET_ERR;
+tra_eio_packet_type tra_eio_decode(const char *data, int len) {
+    tra_eio_packet_type etype = TRA_EIO_PACKET_SCERR;
     char type = data[0];
     switch (type) {
-        case EIO_PACKET_PING: {
-            log_debug("eio_decode,EIO_PACKET_PING \n");
-            etype = EIO_PACKET_PING;
+        case EIO_PACKET_OPEN:
+            etype = TRA_EIO_PACKET_OPEN;
             break;
-        }
-        case EIO_PACKET_MESSAGE: {
-            log_debug("eio_decode, EIO_PACKET_MESSAGE \n");
-            etype = EIO_PACKET_MESSAGE;
+        case EIO_PACKET_CLOSE:
+            etype = TRA_EIO_PACKET_CLOSE;
             break;
-        }
-        default: {
-            log_debug("eio_decode, unknown type:%c \n", type);
+        case EIO_PACKET_PING:
+            etype = TRA_EIO_PACKET_PING;
             break;
-        }
+        case EIO_PACKET_PONG:
+            etype = TRA_EIO_PACKET_PONG;
+            break;
+        case EIO_PACKET_MESSAGE:
+            etype = TRA_EIO_PACKET_MESSAGE;
+            break;
+        case EIO_PACKET_UPGRADE:
+            etype = TRA_EIO_PACKET_UPGRADE;
+            break;
+        case EIO_PACKET_NOOP:
+            etype = TRA_EIO_PACKET_NOOP;
+            break;
+        default:
+            break;
     }
     return etype;
+}
+
+tra_sio_packet_type tra_sio_decode(const char *data, int len) {
+    tra_sio_packet_type stype = TRA_SIO_PACKET_SCERR;
+    char type = data[0];
+    switch (type) {
+        case SIO_PACKET_CONNECT:
+            stype = TRA_SIO_PACKET_CONNECT;
+            break;
+        case SIO_PACKET_DISCONNECT:
+            stype = TRA_SIO_PACKET_DISCONNECT;
+            break;
+        case SIO_PACKET_EVENT:
+            stype = TRA_SIO_PACKET_EVENT;
+            break;
+        case SIO_PACKET_ACK:
+            stype = TRA_SIO_PACKET_ACK;
+            break;
+        case SIO_PACKET_ERROR:
+            stype = TRA_SIO_PACKET_ERROR;
+            break;
+        case SIO_PACKET_BINARY_EVENT:
+            stype = TRA_SIO_PACKET_BINARY_EVENT;
+            break;
+        case SIO_PACKET_BINARY_ACK:
+            stype = TRA_SIO_PACKET_BINARY_ACK;
+            break;
+        default:
+            break;
+    }
+    return stype;
 }
 
 int tra_get_ping_timeout(void) {

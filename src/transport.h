@@ -9,26 +9,26 @@
 #define TRA_STR_MAX 32
 #define TRA_WS_RESP_MAX 1024
 
-typedef enum _eio_packet_type {
-    EIO_PACKET_ERR = -1,
-    EIO_PACKET_OPEN = '0',
-    EIO_PACKET_CLOSE = '1',
-    EIO_PACKET_PING = '2',
-    EIO_PACKET_PONG = '3',
-    EIO_PACKET_MESSAGE = '4',
-    EIO_PACKET_UPGRADE = '5',
-    EIO_PACKET_NOOP = '6'
+typedef enum _tra_eio_packet_type {
+    TRA_EIO_PACKET_SCERR = -1,
+    TRA_EIO_PACKET_OPEN = 0,
+    TRA_EIO_PACKET_CLOSE = 1,
+    TRA_EIO_PACKET_PING = 2,
+    TRA_EIO_PACKET_PONG = 3,
+    TRA_EIO_PACKET_MESSAGE = 4,
+    TRA_EIO_PACKET_UPGRADE = 5,
+    TRA_EIO_PACKET_NOOP = 6
 } tra_eio_packet_type;
 
-typedef enum _sio_packet_type {
-    SIO_PACKET_ERR = -1,
-    SIO_PACKET_CONNECT = '0',
-    SIO_PACKET_DISCONNECT = '1',
-    SIO_PACKET_EVENT = '2',
-    SIO_PACKET_ACK = '3',
-    SIO_PACKET_ERROR = '4',
-    SIO_PACKET_BINARY_EVENT = '5',
-    SIO_PACKET_BINARY_ACK = '6'
+typedef enum _tra_sio_packet_type {
+    TRA_SIO_PACKET_SCERR = -1,
+    TRA_SIO_PACKET_CONNECT = 0,
+    TRA_SIO_PACKET_DISCONNECT = 1,
+    TRA_SIO_PACKET_EVENT = 2,
+    TRA_SIO_PACKET_ACK = 3,
+    TRA_SIO_PACKET_ERROR = 4,
+    TRA_SIO_PACKET_BINARY_EVENT = 5,
+    TRA_SIO_PACKET_BINARY_ACK = 6
 } tra_sio_packet_type;
 
 struct http_request_info {
@@ -58,7 +58,9 @@ extern int tra_encode(tra_sio_packet_type type, const char *data, int data_len,
 extern int tra_eio_encode(tra_eio_packet_type type, const char *data, int data_len,
                           char *encoded_data, int encoded_len);
 
-extern tra_eio_packet_type eio_decode(const char *data, int data_len);
+extern tra_eio_packet_type tra_eio_decode(const char *data, int len);
+
+extern tra_sio_packet_type tra_sio_decode(const char *data, int len);
 
 extern int tra_ws_set_content(const char *data, int data_len, char *dst,
                               int dst_len);
