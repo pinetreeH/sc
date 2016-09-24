@@ -3,33 +3,17 @@
 //
 
 #include "session.h"
+#include "client.h"
 #include "util.h"
 #include "hashmap.h"
 #include "minheap.h"
 #include <string.h>
 #include <arpa/inet.h>
 
-#define CLIENT_SID_MAX 48
-
-struct client {
-    // TODO ipv6
-    char ip[INET_ADDRSTRLEN];
-    int port;
-    char sid[CLIENT_SID_MAX];
-    int fd;
-    int heartbeat;
-    heap *heartbeat_in_ses;
-};
-
-struct fd_client {
-    int fd;
-    struct client *client;
-};
-
 struct session {
     int capacity;
     int size;
-    struct fd_client *fd_to_client;// array
+    struct client **clients;// array
     hashmap *sid_to_client; // sid is a string
     heap *heartbeat;
 };
@@ -42,19 +26,20 @@ int ses_init(int capacity) {
     sessions.sid_to_client = hashmap_init(capacity, hashmap_strkey_cmp,
                                           NULL, NULL, NULL,
                                           hashmap_strkey_hashindex);
-    sessions.fd_to_client = mem_calloc(capacity, sizeof(struct fd_client));
+    sessions.clients = (struct client **)
+            mem_calloc(capacity, sizeof(struct client *) * capacity);
 
     sessions.heartbeat = heap_init(capacity, minheap_key_cmp);
 
     if (!sessions.sid_to_client)
         return -1;
-    if (!sessions.fd_to_client) {
+    if (!sessions.clients) {
         mem_free(sessions.sid_to_client);
         return -1;
     }
     if (!sessions.heartbeat) {
         mem_free(sessions.sid_to_client);
-        mem_free(sessions.fd_to_client);
+        mem_free(sessions.clients);
         return -1;
     }
 
@@ -65,25 +50,27 @@ int ses_add_new_client(int fd, const char *sid) {
     if (fd >= sessions.capacity)
         return -1;
 
-    log_debug("ses_add_new_client,fd:%d,sid:%s\n",fd,sid);
+    log_debug("ses_add_new_client,fd:%d,sid:%s\n", fd, sid);
 
-    struct client *c = mem_malloc(sizeof(struct client));
+    struct client *c = (struct client *) mem_malloc(sizeof(struct client));
     if (!c)
         return -1;
 
     c->fd = fd;
-    strcpy(c->sid,sid);
+    strcpy(c->sid, sid);
     c->heartbeat = util_get_timestamp();
-    util_get_fd_ip_port(fd,c->ip,&c->port);
+    util_get_fd_ip_port(fd, c->ip, &c->port);
     c->heartbeat_in_ses = heap_insert(sessions.heartbeat,
                                       (void *) &c->heartbeat, (void *) c);
 
-    sessions.fd_to_client[fd].fd = fd;
-    sessions.fd_to_client[fd].client = c;
+    sessions.clients[fd] = c;
 
     if (hashmap_set(sessions.sid_to_client, (void *) c->sid, (void *) c)
-        == HASHMAP_OK)
+        == HASHMAP_OK) {
+        //TODO
+        sessions.size++;
         return 0;
+    }
 
     return -1;
 }
@@ -92,9 +79,8 @@ int ses_del_client_by_fd(int fd) {
     if (fd >= sessions.capacity)
         return -1;
 
-    sessions.fd_to_client[fd].fd = 0;
-    struct client *client = sessions.fd_to_client[fd].client;
-    sessions.fd_to_client[fd].client = NULL;
+    struct client *client = sessions.clients[fd];
+    sessions.clients[fd] = NULL;
 
     hashmap_delete(sessions.sid_to_client, (void *) client->sid, 0, 0);
 
@@ -102,9 +88,10 @@ int ses_del_client_by_fd(int fd) {
     minheap_update(sessions.heartbeat, client->heartbeat_in_ses, &heartbeat,
                    minheap_key_update);
 
-    log_debug("ses_del_client_by_fd,fd:%d,sid:%s\n",fd,client->sid);
+    log_debug("ses_del_client_by_fd,fd:%d,sid:%s\n", fd, client->sid);
 
     mem_free(client);
+    sessions.size--;
 }
 
 int ses_del_client_by_sid(const char *sid) {
@@ -114,6 +101,7 @@ int ses_del_client_by_sid(const char *sid) {
     struct client *client = NULL;
     if (hashmap_get(sessions.sid_to_client, (void *) sid, client)
         == HASHMAP_OK) {
+        sessions.size--;
         return ses_del_client_by_fd(client->fd);
     }
     return -1;
@@ -132,7 +120,7 @@ static struct client *ses_get_client_by_fd(int fd) {
     if (fd >= sessions.capacity)
         return NULL;
 
-    return sessions.fd_to_client[fd].client;
+    return sessions.clients[fd];
 }
 
 int ses_get_min_time(void) {
@@ -154,7 +142,7 @@ int ses_new_connection(int fd, const char *data, int data_len) {
 }
 
 int ses_update_client_heartbeat_by_fd(int fd) {
-    struct client *c = sessions.fd_to_client[fd].client;
+    struct client *c = sessions.clients[fd];
     if (!c)
         return 0;
 
@@ -163,4 +151,9 @@ int ses_update_client_heartbeat_by_fd(int fd) {
                                          (void *) c->heartbeat_in_ses,
                                          (void *) &c->heartbeat,
                                          minheap_key_update);
+}
+
+struct client **ses_get_clients(int *size) {
+    *size = sessions.size;
+    return sessions.clients;
 }

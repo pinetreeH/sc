@@ -7,6 +7,7 @@
 #include "session.h"
 #include "transport.h"
 #include "hashmap.h"
+#include "client.h"
 #include "util.h"
 #include <string.h>
 
@@ -146,6 +147,31 @@ int hdl_register_handler(const char *nsp, struct handler_if *h) {
         return -1;
 
     msg_handler = *h;
+    return 0;
+}
+
+int hdl_emit(struct client *c, const char *data, int len) {
+    if (!c || !data || len <= 0 || c->fd <= 0)
+        return -1;
+
+    util_tcp_send(c->fd, data, len);
+    return 0;
+}
+
+int hdl_broadcast(struct client *except_clients, int client_size,
+                  const char *data, int len) {
+    UTIL_NOTUSED(except_clients);
+    UTIL_NOTUSED(client_size);
+    int size = 0;
+    struct client **cs = ses_get_clients(&size);
+    int idx = 0;
+    struct client *c = NULL;
+    while (size > 0) {
+        c = cs[idx];
+        if (!c || c->fd > 0)
+            util_tcp_send(c->fd, data, len);
+        size--;
+    }
     return 0;
 }
 

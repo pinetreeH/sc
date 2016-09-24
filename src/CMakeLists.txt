@@ -14,7 +14,7 @@ set(SOURCE_FILES server.c reactor.h reactor.c
         3rd/c-websocket/sha1.c 3rd/c-websocket/sha1.h
         3rd/cJson/cJSON.c 3rd/cJson/cJSON.h
         3rd/cJson/cJSON_Utils.c 3rd/cJson/cJSON_Utils.h
-        handler.c handler.h minheap.c minheap.h handler_if.h)
+        handler.c handler.h minheap.c minheap.h handler_if.h client.h)
 add_executable(sc ${SOURCE_FILES} reactor.h reactor.c
         netevent.h netevent.c util.h util.c
         session.h session.c hashmap.h hashmap.c
