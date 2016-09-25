@@ -19,8 +19,9 @@ extern int hdl_register_handler(const char *nsp, struct handler_if *h);
 extern int hdl_emit(struct client *c, const char *event, int event_len,
                     const char *msg, int len);
 
-extern int hdl_broadcast(struct client *except_clients, int client_size,
-                         const char *event, const char *msg, int len);
+extern int hdl_broadcast(struct client **except_clients, int client_size,
+                         const char *event, int event_len,
+                         const char *msg, int len);
 
 //extern int hdl_init(void);
 

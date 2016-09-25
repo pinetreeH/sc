@@ -160,19 +160,23 @@ int hdl_emit(struct client *c, const char *event, int event_len,
     return 0;
 }
 
-int hdl_broadcast(struct client *except_clients, int client_size,
-                  const char *event, const char *msg, int len) {
-    UTIL_NOTUSED(except_clients);
-    UTIL_NOTUSED(client_size);
+int hdl_broadcast(struct client **except_clients, int client_size,
+                  const char *event, int event_len,
+                  const char *msg, int len) {
     int size = 0;
     struct client **cs = ses_get_clients(&size);
     int idx = 0;
     struct client *c = NULL;
     while (size > 0) {
-        c = cs[idx];
-        if (!c || c->fd > 0)
-            //util_tcp_send(c->fd, data, len);
-        size--;
+        c = cs[idx++];
+        if (c && c->fd > 0) {
+            for (int t = 0; t < client_size; t++) {
+                if (c != except_clients[t]) {
+                    hdl_emit(c, event, event_len, msg, len);
+                }
+            }
+            size--;
+        }
     }
     return 0;
 }

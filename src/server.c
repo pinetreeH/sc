@@ -5,8 +5,10 @@
 #include "handler.h"
 #include "handler_if.h"
 #include "util.h"
+#include "client.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 // example function declare
 static void sc_on_connect(int fd, const char *data, int len);
@@ -72,8 +74,12 @@ void sc_on_event(int fd, const char *data, int len) {
     log_debug("socket.io event packet, fd:%d, data:%s\n", fd, data);
     struct client *c = ses_get_client_by_fd(fd);
     char *event = "\"news\"";
-    char *test_msg = "{\"hello\":\"pinetree\"}";
-    hdl_emit(c, event, strlen(event), test_msg, strlen(test_msg));
+    char client_msg[256] = {0};
+    sprintf(client_msg, "{\"hello\":\"welcome:%s\"}", c->sid);
+    char bro_msg[256] = {0};
+    sprintf(bro_msg, "{\"hello_all\":\"welcome new client:%s\"}", c->sid);
+    hdl_emit(c, event, strlen(event), client_msg, strlen(client_msg));
+    hdl_broadcast(&c, 1, event, strlen(event), bro_msg, strlen(bro_msg));
 }
 
 void sc_on_ack(int fd, const char *data, int len) {

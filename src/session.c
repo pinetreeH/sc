@@ -27,7 +27,7 @@ int ses_init(int capacity) {
                                           NULL, NULL, NULL,
                                           hashmap_strkey_hashindex);
     sessions.clients = (struct client **)
-            mem_calloc(capacity, sizeof(struct client *) * capacity);
+            mem_calloc(capacity, sizeof(struct client *));
 
     sessions.heartbeat = heap_init(capacity, minheap_key_cmp);
 
