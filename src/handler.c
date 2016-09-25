@@ -144,13 +144,14 @@ int hdl_register_handler(const char *nsp, struct handler_if *h) {
     return 0;
 }
 
-int hdl_emit(struct client *c, const char *event, const char *msg, int len) {
+int hdl_emit(struct client *c, const char *event, int event_len,
+             const char *msg, int len) {
     if (!c || !event || !msg || len <= 0 || c->fd <= 0)
         return -1;
     char encode_data[TRA_WS_RESP_MAX] = {0};
 
     int encode_len = -1;
-    encode_len = tra_sio_encode(TRA_SIO_PACKET_EVENT, NULL, 0, event, strlen(event), msg, len,
+    encode_len = tra_sio_encode(TRA_SIO_PACKET_EVENT, NULL, 0, event, event_len, msg, len,
                                 encode_data, TRA_WS_RESP_MAX);
 
     log_debug("hdl_emit data len:%d\n", encode_len);

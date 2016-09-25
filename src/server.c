@@ -73,7 +73,7 @@ void sc_on_event(int fd, const char *data, int len) {
     struct client *c = ses_get_client_by_fd(fd);
     char *event = "\"news\"";
     char *test_msg = "{\"hello\":\"pinetree\"}";
-    hdl_emit(c, event, test_msg, strlen(test_msg));
+    hdl_emit(c, event, strlen(event), test_msg, strlen(test_msg));
 }
 
 void sc_on_ack(int fd, const char *data, int len) {
