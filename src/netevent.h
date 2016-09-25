@@ -12,5 +12,8 @@ extern int net_init_socket(char *ip, int port);
 extern void net_server_accpet(struct reactor_base *base, int fd,
                               void *fd_parameter, int mask);
 
+extern void net_admin_server_accpet(struct reactor_base *base, int fd,
+                                    void *fd_parameter, int mask);
+
 
 #endif

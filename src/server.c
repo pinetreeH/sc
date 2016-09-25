@@ -26,8 +26,9 @@ static void sc_on_binary_event(int fd, const char *data, int len);
 static void sc_on_binary_ack(int fd, const char *data, int len);
 
 int main(int argc, char **args) {
+    int capacity = 128;
     struct reactor_base *base = NULL;
-    base = ae_init(10);
+    base = ae_init(capacity);
     if (!base)
         exit(EXIT_FAILURE);
 
@@ -36,15 +37,22 @@ int main(int argc, char **args) {
     tra_conf_init(ping_interval, ping_timeout);
     char *ip = "127.0.0.1";
     int port = 5074;
+    int admin_port = 9527;
     int sockfd = net_init_socket(ip, port);
     util_set_fd_nonblocking(sockfd);
     ae_add_net_event(base, sockfd, AE_NET_EVENT_READ,
                      net_server_accpet, NULL,
                      "net_server_accpet");
 
+    int admin_sockfd = net_init_socket(ip, admin_port);
+    util_set_fd_nonblocking(admin_sockfd);
+    ae_add_net_event(base, admin_sockfd, AE_NET_EVENT_READ,
+                     net_admin_server_accpet, NULL,
+                     "net_admin_server_accpet");
+
     tra_http_parse_init();
     tra_default_sio_packet_init();
-    ses_init(10);
+    ses_init(capacity);
 
     struct handler_if msg_handler;
     msg_handler.on_connect = sc_on_connect;

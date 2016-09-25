@@ -23,6 +23,8 @@ extern int hdl_broadcast(struct client **except_clients, int client_size,
                          const char *event, int event_len,
                          const char *msg, int len);
 
+extern int hdl_admin_recv_data(int fd, const char *data, int len);
+
 //extern int hdl_init(void);
 
 #endif

@@ -37,6 +37,27 @@ static void handle_tcp_recv(struct reactor_base *base, int fd,
     }
 }
 
+static void handle_admin_tcp_recv(struct reactor_base *base, int fd,
+                                  void *fn_parameter, int mask) {
+    UTIL_NOTUSED(base);
+    UTIL_NOTUSED(fn_parameter);
+    UTIL_NOTUSED(mask);
+
+    char buf[TCP_MSG_BUF_LEN] = {'\0'};
+    int buf_len = util_tcp_recv(fd, buf, TCP_MSG_BUF_LEN);
+    if (buf_len == 0) {
+        log_debug("handle_admin_tcp_recv buf_len==0\n");
+        // close fd and client
+        ae_del_net_event(base, fd, AE_NET_EVENT_READ | AE_NET_EVENT_WRITE);
+    } else if (buf_len < 0) {
+        log_debug("handle_admin_tcp_recv buf_len<0,%d\n", buf_len);
+        ae_del_net_event(base, fd, AE_NET_EVENT_READ | AE_NET_EVENT_WRITE);
+    } else {
+        log_debug("handle_admin_tcp_recv>>>:%d,%s\n", buf_len, buf);
+        hdl_admin_recv_data(fd, buf, buf_len);
+    }
+}
+
 int net_init_socket(char *ip, int port) {
     struct sockaddr_in addr;
     bzero(&addr, sizeof(addr));
@@ -79,3 +100,17 @@ void net_server_accpet(struct reactor_base *base, int fd, void *fd_parameter,
                      NULL, "handle_tcp_recv");
 }
 
+void net_admin_server_accpet(struct reactor_base *base, int fd, void *fd_parameter,
+                             int mask) {
+    UTIL_NOTUSED(base);
+    UTIL_NOTUSED(fd_parameter);
+    UTIL_NOTUSED(mask);
+
+    struct sockaddr_in clientaddr;
+    socklen_t clientaddr_len = sizeof(clientaddr);
+    int connfd = accept(fd, (struct sockaddr *) &clientaddr, &clientaddr_len);
+    log_debug("net_admin_server_accpet connfd:%d\n", connfd);
+    util_set_fd_nonblocking(connfd);
+    ae_add_net_event(base, connfd, AE_NET_EVENT_READ, handle_admin_tcp_recv,
+                     NULL, "handle_admin_tcp_recv");
+}

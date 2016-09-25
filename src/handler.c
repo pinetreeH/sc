@@ -10,6 +10,7 @@
 #include "client.h"
 #include "util.h"
 #include <string.h>
+#include <stdio.h>
 
 #define TMP_MSG_MAX 256
 
@@ -127,6 +128,23 @@ int hdl_recv_data(int fd, const char *data, int len) {
     }
 }
 
+int hdl_admin_recv_data(int fd, const char *data, int len) {
+    log_debug("hdl_admin_recv_data,fd:%d,data:%s\n", fd, data);
+    char test_admin_msg[TMP_MSG_MAX] = {0};
+    if (len > 0) {
+        int idx = 0;
+        for (; idx < len && idx < TMP_MSG_MAX - 1 && data[idx] != '\r'; idx++) {
+            test_admin_msg[idx] = data[idx];
+        }
+        test_admin_msg[idx] = '\0';
+        char *event = "\"news\"";
+        char bro_msg[TMP_MSG_MAX * 2] = {0};
+        sprintf(bro_msg, "{\"admin\":\"msg:%s\"}", test_admin_msg);
+        log_debug("admin_msg:%s\n", bro_msg);
+        hdl_broadcast(NULL, 0, event, strlen(event), bro_msg, strlen(bro_msg));
+    }
+}
+
 int hdl_recv_close(int fd) {
     return ses_del_client_by_fd(fd);
 }
@@ -170,9 +188,13 @@ int hdl_broadcast(struct client **except_clients, int client_size,
     while (size > 0) {
         c = cs[idx++];
         if (c && c->fd > 0) {
-            for (int t = 0; t < client_size; t++) {
-                if (c != except_clients[t]) {
-                    hdl_emit(c, event, event_len, msg, len);
+            if (!except_clients || client_size == 0) {
+                hdl_emit(c, event, event_len, msg, len);
+            } else {
+                for (int t = 0; t < client_size; t++) {
+                    if (c != except_clients[t]) {
+                        hdl_emit(c, event, event_len, msg, len);
+                    }
                 }
             }
             size--;
