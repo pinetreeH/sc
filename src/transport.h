@@ -52,10 +52,13 @@ extern int tra_get_conf(const char *sid, char *msg);
 
 extern void tra_conf_init(int ping_interval, int ping_timeout);
 
-extern int tra_encode(tra_sio_packet_type type, const char *data, int data_len,
-                      char *encoded_data, int encoded_len);
+extern int tra_sio_encode(tra_sio_packet_type type,
+                          const char *nsp, int nsp_len,
+                          const char *event, int event_len,
+                          const char *msg, int msg_len,
+                          char *encoded_data, int encoded_len);
 
-extern int tra_eio_encode(tra_eio_packet_type type, const char *data, int data_len,
+extern int tra_eio_encode(tra_eio_packet_type type, const char *data, int len,
                           char *encoded_data, int encoded_len);
 
 extern tra_eio_packet_type tra_eio_decode(const char *data, int len);

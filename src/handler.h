@@ -16,10 +16,11 @@ extern int hdl_recv_err(int fd);
 
 extern int hdl_register_handler(const char *nsp, struct handler_if *h);
 
-extern int hdl_emit(struct client *c, const char *data, int len);
+extern int hdl_emit(struct client *c, const char *event, const char *msg,
+                    int len);
 
 extern int hdl_broadcast(struct client *except_clients, int client_size,
-                         const char *data, int len);
+                         const char *event, const char *msg, int len);
 
 //extern int hdl_init(void);
 

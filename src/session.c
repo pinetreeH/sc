@@ -107,7 +107,7 @@ int ses_del_client_by_sid(const char *sid) {
     return -1;
 }
 
-static struct client *ses_get_client_by_sid(const char *sid) {
+struct client *ses_get_client_by_sid(const char *sid) {
     if (!sid || !sessions.sid_to_client)
         return NULL;
 
@@ -116,7 +116,7 @@ static struct client *ses_get_client_by_sid(const char *sid) {
     return client;
 }
 
-static struct client *ses_get_client_by_fd(int fd) {
+struct client *ses_get_client_by_fd(int fd) {
     if (fd >= sessions.capacity)
         return NULL;
 

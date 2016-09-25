@@ -38,13 +38,7 @@ static int handle_new_connection(int fd, const char *data, int len) {
                                              config_msg_len, encode_msg,
                                              TMP_MSG_MAX);
 
-        char websocket_msg[TMP_MSG_MAX];
-        int websocket_msg_len = tra_ws_set_content(encode_msg,
-                                                   encode_data_len,
-                                                   websocket_msg,
-                                                   TMP_MSG_MAX);
-
-        util_tcp_send(fd, websocket_msg, websocket_msg_len);
+        util_tcp_send(fd, encode_msg, encode_data_len);
         // after send config msg, we create a new client
         ses_add_new_client(fd, sid);
         // send CONNECT packet
@@ -150,16 +144,23 @@ int hdl_register_handler(const char *nsp, struct handler_if *h) {
     return 0;
 }
 
-int hdl_emit(struct client *c, const char *data, int len) {
-    if (!c || !data || len <= 0 || c->fd <= 0)
+int hdl_emit(struct client *c, const char *event, const char *msg, int len) {
+    if (!c || !event || !msg || len <= 0 || c->fd <= 0)
         return -1;
+    char encode_data[TRA_WS_RESP_MAX] = {0};
 
-    util_tcp_send(c->fd, data, len);
+    int encode_len = -1;
+    encode_len = tra_sio_encode(TRA_SIO_PACKET_EVENT, NULL, 0, event, strlen(event), msg, len,
+                                encode_data, TRA_WS_RESP_MAX);
+
+    log_debug("hdl_emit data len:%d\n", encode_len);
+    util_tcp_send(c->fd, encode_data, encode_len);
+
     return 0;
 }
 
 int hdl_broadcast(struct client *except_clients, int client_size,
-                  const char *data, int len) {
+                  const char *event, const char *msg, int len) {
     UTIL_NOTUSED(except_clients);
     UTIL_NOTUSED(client_size);
     int size = 0;
@@ -169,7 +170,7 @@ int hdl_broadcast(struct client *except_clients, int client_size,
     while (size > 0) {
         c = cs[idx];
         if (!c || c->fd > 0)
-            util_tcp_send(c->fd, data, len);
+            //util_tcp_send(c->fd, data, len);
         size--;
     }
     return 0;

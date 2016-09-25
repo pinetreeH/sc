@@ -25,5 +25,8 @@ extern int ses_update_client_heartbeat_by_fd(int fd);
 
 extern struct client **ses_get_clients(int *size);
 
+extern struct client *ses_get_client_by_fd(int fd);
+
+extern struct client *ses_get_client_by_sid(const char *sid);
 
 #endif

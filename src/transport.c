@@ -112,24 +112,104 @@ void tra_conf_init(int interval, int timeout) {
     ping_timeout = timeout;
 }
 
-int tra_encode(tra_sio_packet_type type, const char *data, int data_len,
-               char *encoded_data, int encoded_len) {
+static char get_sio_type(tra_sio_packet_type sio_type) {
+    char type = SIO_PACKET_EVENT;
+    switch (sio_type) {
+        case TRA_SIO_PACKET_CONNECT:
+            type = SIO_PACKET_CONNECT;
+            break;
+        case TRA_SIO_PACKET_DISCONNECT:
+            type = SIO_PACKET_DISCONNECT;
+            break;
+        case TRA_SIO_PACKET_EVENT:
+            type = SIO_PACKET_EVENT;
+            break;
+        case TRA_SIO_PACKET_ACK:
+            type = SIO_PACKET_ACK;
+            break;
+        case TRA_SIO_PACKET_ERROR:
+            type = SIO_PACKET_ERROR;
+            break;
+        case TRA_SIO_PACKET_BINARY_EVENT:
+            type = SIO_PACKET_BINARY_EVENT;
+            break;
+        case TRA_SIO_PACKET_BINARY_ACK:
+            type = SIO_PACKET_BINARY_ACK;
+            break;
+        default:
+            break;
+    }
+    return type;
 }
 
-int tra_eio_encode(tra_eio_packet_type type, const char *data, int data_len,
+static char get_eio_type(tra_eio_packet_type eio_type) {
+    char type = EIO_PACKET_MESSAGE;
+    switch (eio_type) {
+        case TRA_EIO_PACKET_OPEN:
+            type = EIO_PACKET_OPEN;
+            break;
+        case TRA_EIO_PACKET_CLOSE:
+            type = EIO_PACKET_CLOSE;
+            break;
+        case TRA_EIO_PACKET_PING:
+            type = EIO_PACKET_PING;
+            break;
+        case TRA_EIO_PACKET_PONG:
+            type = EIO_PACKET_PONG;
+            break;
+        case TRA_EIO_PACKET_MESSAGE:
+            type = EIO_PACKET_MESSAGE;
+            break;
+        case TRA_EIO_PACKET_UPGRADE:
+            type = EIO_PACKET_UPGRADE;
+            break;
+        case TRA_EIO_PACKET_NOOP:
+            type = EIO_PACKET_NOOP;
+            break;
+        default:
+            break;
+
+    }
+    return type;
+}
+
+int tra_sio_encode(tra_sio_packet_type sio_type,
+                   const char *nsp, int nsp_len,
+                   const char *event, int event_len,
+                   const char *msg, int len,
                    char *encoded_data, int encoded_len) {
-    if (encoded_len <= data_len)
+    //42/yy,["news",{"hello":"world"}]
+    int idx = 0;
+    char sio_data[TRA_WS_RESP_MAX] = {0};
+    sio_data[idx++] = get_sio_type(sio_type);//'2'
+    UTIL_NOTUSED(nsp);
+    UTIL_NOTUSED(nsp_len);
+    sio_data[idx++] = '[';
+    for (int t = 0; t < event_len; t++) {
+        sio_data[idx++] = event[t];
+    }
+    sio_data[idx++] = ',';
+    for (int t = 0; t < len; t++) {
+        sio_data[idx++] = msg[t];
+    }
+    sio_data[idx++] = ']';
+
+    return tra_eio_encode(TRA_EIO_PACKET_MESSAGE, sio_data, idx,
+                          encoded_data, encoded_len);
+}
+
+int tra_eio_encode(tra_eio_packet_type eio_type, const char *data, int len,
+                   char *encoded_data, int encoded_len) {
+    if (encoded_len <= len)
         return -1;
 
-    int encode_idx = 0;
-    if (type == TRA_EIO_PACKET_OPEN) {
-        encoded_data[encode_idx++] = EIO_PACKET_OPEN;
-        for (int i = 0; i < data_len; i++) {
-            encoded_data[encode_idx++] = data[i];
-        }
+    char eio_data[TRA_WS_RESP_MAX] = {0};
+    int idx = 0;
+    eio_data[idx++] = get_eio_type(eio_type);
+    for (int t = 0; t < len; t++) {
+        eio_data[idx++] = data[t];
     }
-
-    return encode_idx;
+    return tra_ws_set_content(eio_data, idx, encoded_data, encoded_len);
 }
 
 int tra_ws_set_content(const char *data, int data_len, char *dst, int dst_len) {
