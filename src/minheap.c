@@ -71,6 +71,19 @@ heap *heap_init(int capacity, heap_key_cmp *cmp_fn) {
     return h;
 }
 
+void heap_del(heap *h) {
+    if (h) {
+        mem_free(h->elements);
+        mem_free(h);
+    }
+}
+
+int heap_size(heap *h) {
+    if (h)
+        return h->size;
+    return 0;
+}
+
 void *heap_insert(heap *h, void *key, void *data) {
     if (!h || h->size >= h->capacity - 1)
         return NULL;
@@ -90,13 +103,19 @@ int heap_del_root(heap *h) {
     return 0;
 }
 
-extern int heap_get_root(heap *h, void **key, void **data) {
+int heap_get_root(heap *h, void **key, void **data) {
     if (!h)
         return -1;
 
     *key = h->elements[0].key;
     *data = h->elements[0].data;
     return 0;
+}
+
+void *heap_root_pos(heap *h) {
+    if (!h)
+        return NULL;
+    return (void *) h->elements;
 }
 
 int minheap_key_cmp(void *k1, void *k2) {

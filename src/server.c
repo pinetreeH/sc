@@ -64,7 +64,7 @@ int main(int argc, char **args) {
     msg_handler.on_binary_ack = sc_on_binary_ack;
     hdl_register_handler(NULL, &msg_handler);
 
-    ae_run(base);
+    ae_run(base, AE_NET_EVENT | AE_TIME_EVENT);
     ae_del(base);
 
     return EXIT_SUCCESS;
@@ -83,7 +83,7 @@ void sc_on_event(int fd, const char *data, int len) {
     struct client *c = ses_get_client_by_fd(fd);
     char *event = "\"news\"";
     char client_msg[256] = {0};
-    sprintf(client_msg, "{\"hello\":\"welcome:%s\"}", c->sid);
+    sprintf(client_msg, "{\"hello\":\"your sid:%s\"}", c->sid);
     char bro_msg[256] = {0};
     sprintf(bro_msg, "{\"hello_all\":\"welcome new client:%s\"}", c->sid);
     hdl_emit(c, event, strlen(event), client_msg, strlen(client_msg));

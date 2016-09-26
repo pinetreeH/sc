@@ -21,6 +21,12 @@ extern int heap_del_root(heap *h);
 
 extern int heap_get_root(heap *h, void **key, void **data);
 
+extern void heap_del(heap *h);
+
+extern int heap_size(heap *h);
+
+extern void *heap_root_pos(heap *h);
+
 // for minheap
 extern void *minheap_update(heap *h, void *elment, void *new_key,
                             heap_key_update *update_fn);
