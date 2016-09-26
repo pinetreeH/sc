@@ -307,6 +307,7 @@ static int process_time_event(struct reactor_base *ae) {
                            (void *) &new_k, minheap_key_update);
         }
     } while (1);
+
     return 0;
 }
 
