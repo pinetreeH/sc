@@ -178,6 +178,19 @@ int hdl_emit(struct client *c, const char *event, int event_len,
     return 0;
 }
 
+static inline int in_except_list(struct client **except_clients,
+                                 int client_size, struct client *c) {
+    if (!except_clients || client_size == 0)
+        return 0;
+
+    for (int i = 0; i < client_size; i++) {
+        if (except_clients[i] == c) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int hdl_broadcast(struct client **except_clients, int client_size,
                   const char *event, int event_len,
                   const char *msg, int len) {
@@ -188,14 +201,8 @@ int hdl_broadcast(struct client **except_clients, int client_size,
     while (size > 0) {
         c = cs[idx++];
         if (c && c->fd > 0) {
-            if (!except_clients || client_size == 0) {
+            if (!in_except_list(except_clients, client_size, c)) {
                 hdl_emit(c, event, event_len, msg, len);
-            } else {
-                for (int t = 0; t < client_size; t++) {
-                    if (c != except_clients[t]) {
-                        hdl_emit(c, event, event_len, msg, len);
-                    }
-                }
             }
             size--;
         }
