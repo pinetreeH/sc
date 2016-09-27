@@ -8,7 +8,7 @@
 #define AE_OK 0
 #define AE_ERR -1
 
-#define AE_EVENT_NONE (1<<0)
+#define AE_EVENT_NONE (0)
 #define AE_NET_EVENT_READ (1<<1)
 #define AE_NET_EVENT_WRITE (1<<2)
 #define AE_NET_EVENT (1<<3)

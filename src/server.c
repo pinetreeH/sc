@@ -64,7 +64,7 @@ int main(int argc, char **args) {
     msg_handler.on_binary_ack = sc_on_binary_ack;
     hdl_register_handler(NULL, &msg_handler);
 
-    ae_run(base, AE_NET_EVENT | AE_TIME_EVENT);
+    ae_run(base, AE_NET_EVENT);
     ae_del(base);
 
     return EXIT_SUCCESS;

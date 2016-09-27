@@ -46,13 +46,12 @@ static int get_min_wait_time(struct reactor_base *ae);
 
 
 struct reactor_base *ae_init(int capacity) {
-    struct reactor_base *base = mem_malloc(sizeof(struct reactor_base));
+    struct reactor_base *base = mem_calloc(1, sizeof(struct reactor_base));
     do {
         if (!base) {
             break;
         }
-        base->net_events = mem_malloc(sizeof(struct net_event) *
-                                      capacity);
+        base->net_events = mem_calloc(capacity, sizeof(struct net_event));
         if (!base->net_events) {
             mem_free(base);
             break;
@@ -66,7 +65,7 @@ struct reactor_base *ae_init(int capacity) {
             mem_free(base);
             break;
         }
-        base->ep_events = mem_malloc(sizeof(struct epoll_event) * capacity);
+        base->ep_events = mem_calloc(capacity, sizeof(struct epoll_event));
         if (!base->ep_events) {
             mem_free(base->net_events);
             mem_free(base);
