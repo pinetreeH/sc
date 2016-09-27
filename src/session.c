@@ -149,7 +149,7 @@ int ses_update_client_heartbeat_by_fd(int fd) {
     c->heartbeat = util_get_timestamp();
     c->heartbeat_in_ses = minheap_update(sessions.heartbeat,
                                          (void *) c->heartbeat_in_ses,
-                                         (void *) &c->heartbeat,
+                                         (void *) c->heartbeat,
                                          minheap_key_update);
 }
 
