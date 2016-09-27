@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <sys/epoll.h>
 
-#define DEFAULT_WAIT_TIME 1000
+#define DEFAULT_WAIT_TIME 10
 
 struct net_event {
     int mask;
@@ -198,7 +198,7 @@ int ae_add_time_event(struct reactor_base *ae,
     e->repeat = repeat;
     e->interval = interval;
     int k = e->last_proc_timestamp + e->interval;
-    heap_insert(ae->time_events, (void *) &k, (void *) e);
+    heap_insert(ae->time_events, (void *) k, (void *) e);
 
     return 0;
 }
@@ -260,9 +260,11 @@ static int get_min_wait_time(struct reactor_base *ae) {
             break;
 
         struct time_event *e = NULL;
-        int k = 0;
+        int *k = NULL;
         int tmp = heap_get_root(ae->time_events, (void **) &k,
                                 (void **) &e);
+        //log_debug("heap_get_root,key:%d\n",(int)k);
+
         if (tmp == -1) {
             log_err("get_min_wait_time err!\n");
             break;
@@ -286,11 +288,13 @@ static int process_time_event(struct reactor_base *ae) {
         return 0;
 
     int current_timestamp = util_get_timestamp();
-    int k = 0;
+    int *k = NULL;
     struct time_event *e = NULL;
     do {
         heap_get_root(ae->time_events, (void **) &k, (void **) &e);
-        if (k < current_timestamp)
+        if (k == NULL)
+            break;
+        if ((int) k > current_timestamp)
             break;
 
         e->fn(ae->time_events, e->fn_parameter);
@@ -303,7 +307,7 @@ static int process_time_event(struct reactor_base *ae) {
             e->last_proc_timestamp = current_timestamp;
             int new_k = e->last_proc_timestamp + e->interval;
             minheap_update(ae->time_events, heap_root_pos(ae->time_events),
-                           (void *) &new_k, minheap_key_update);
+                           (void *) new_k, minheap_key_update);
         }
     } while (1);
 

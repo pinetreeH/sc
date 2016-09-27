@@ -119,15 +119,11 @@ void *heap_root_pos(heap *h) {
 }
 
 int minheap_key_cmp(void *k1, void *k2) {
-    int key1 = *(int *) k1;
-    int key2 = *(int *) k2;
-    return key1 <= key2;
+    return (int) k1 <= (int) k2;
 }
 
 int minheap_key_update(void *k1, void *k2) {
-    int key1 = *(int *) k1;
-    int key2 = *(int *) k2;
-    return key1 - key2;
+    return (int) k1 - (int) k2;
 }
 
 void *minheap_update(heap *h, void *elment, void *new_key,
