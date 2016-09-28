@@ -195,6 +195,7 @@ int ae_add_time_event(struct reactor_base *ae,
     e->last_proc_timestamp = util_get_timestamp();
     e->fn = fn;
     e->fn_name = fn_name;
+    e->fn_parameter = fn_parameter;
     e->repeat = repeat;
     e->interval = interval;
     int k = e->last_proc_timestamp + e->interval;
