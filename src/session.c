@@ -123,14 +123,6 @@ struct client *ses_get_client_by_fd(int fd) {
     return sessions.clients[fd];
 }
 
-int ses_get_min_time(void) {
-    int *timestamp = NULL;
-    struct client *c = NULL;
-    heap_get_root(sessions.heartbeat, (void **) &timestamp, (void **) &c);
-    // TODO
-    return 10000;
-}
-
 int ses_new_connection(int fd, const char *data, int data_len) {
     // parse data by protocol
     UTIL_NOTUSED(data);
@@ -144,13 +136,14 @@ int ses_new_connection(int fd, const char *data, int data_len) {
 int ses_update_client_heartbeat_by_fd(int fd) {
     struct client *c = sessions.clients[fd];
     if (!c)
-        return 0;
+        return -1;
 
     c->heartbeat = util_get_timestamp();
     c->heartbeat_in_ses = minheap_update(sessions.heartbeat,
                                          (void *) c->heartbeat_in_ses,
                                          (void *) c->heartbeat,
                                          minheap_key_update);
+    return 0;
 }
 
 struct client **ses_get_clients(int *size) {
