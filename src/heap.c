@@ -142,7 +142,7 @@ void *minheap_update(heap *h, void *elment, void *new_key,
     e->key = new_key;
     int idx = e - h->elements;
     if (add == 0)
-        return e;
+        return (void *) e;
     else if (add > 0)
         return heap_reorder_down(h, idx);
     else
