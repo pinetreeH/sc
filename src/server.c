@@ -27,8 +27,7 @@ static void sc_on_binary_ack(int fd, const char *data, int len);
 
 static void foobar(struct reactor_base *ae, void *data) {
     UTIL_NOTUSED(ae);
-    UTIL_NOTUSED(data);
-    log_debug("foobar,%d\n", util_get_timestamp());
+    log_debug("foobar_%s,%d\n", (char *) data, util_get_timestamp());
 }
 
 int main(int argc, char **args) {
@@ -70,7 +69,9 @@ int main(int argc, char **args) {
     msg_handler.on_binary_ack = sc_on_binary_ack;
     hdl_register_handler(NULL, &msg_handler);
 
-    ae_add_time_event(base, foobar, NULL, "foobar", 2, 3);
+    log_debug("current_timestamp:%d", util_get_timestamp());
+    ae_add_time_event(base, foobar, "1", "foobar", 2, 3);
+    ae_add_time_event(base, foobar, "2", "foobar", 1, 3);
 
     ae_run(base, AE_NET_EVENT | AE_TIME_EVENT);
     ae_del(base);
