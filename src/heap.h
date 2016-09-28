@@ -2,14 +2,11 @@
 // Created by pinetree on 16-9-21.
 //
 
-#ifndef SC_MINHEAP_MINHEAP_H
-#define SC_MINHEAP_MINHEAP_H
+#ifndef SC_HEAP_HEAP_H
+#define SC_HEAP_HEAP_H
 
 // minheap :return 1 if k1 <= k2; 0 if k1 > k2
 typedef int heap_key_cmp(void *k1, void *k2);
-
-// return *k1 - *k2
-typedef int heap_key_update(void *k1, void *k2);
 
 typedef struct heap heap;
 
@@ -28,6 +25,10 @@ extern int heap_size(heap *h);
 extern void *heap_root_pos(heap *h);
 
 // for minheap
+
+// return *k1 - *k2
+typedef int heap_key_update(void *k1, void *k2);
+
 extern void *minheap_update(heap *h, void *elment, void *new_key,
                             heap_key_update *update_fn);
 

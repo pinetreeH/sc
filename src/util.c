@@ -87,7 +87,6 @@ void *mem_malloc(int size) {
 void mem_free(void *data) {
     if (data) {
         free(data);
-        data = NULL;
     }
 }
 

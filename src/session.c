@@ -6,7 +6,7 @@
 #include "client.h"
 #include "util.h"
 #include "hashmap.h"
-#include "minheap.h"
+#include "heap.h"
 #include <string.h>
 #include <arpa/inet.h>
 

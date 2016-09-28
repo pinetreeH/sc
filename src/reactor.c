@@ -3,7 +3,7 @@
 //
 
 #include "reactor.h"
-#include "minheap.h"
+#include "heap.h"
 #include "util.h"
 #include <stdlib.h>
 #include <sys/epoll.h>
