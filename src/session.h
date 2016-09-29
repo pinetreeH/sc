@@ -9,6 +9,8 @@
 
 struct client;
 
+struct reactor_base;
+
 extern int ses_init(int capacity);
 
 extern int ses_add_new_client(int fd, const char *sid);
@@ -26,5 +28,7 @@ extern struct client **ses_get_clients(int *size);
 extern struct client *ses_get_client_by_fd(int fd);
 
 extern struct client *ses_get_client_by_sid(const char *sid);
+
+extern int ses_handle_timeout_client(struct reactor_base *ae, void *heartbeat_timeout);
 
 #endif

@@ -70,8 +70,9 @@ int main(int argc, char **args) {
     hdl_register_handler(NULL, &msg_handler);
 
     log_debug("current_timestamp:%d", util_get_timestamp());
-    ae_add_time_event(base, foobar, "1", "foobar", 2, 3);
-    ae_add_time_event(base, foobar, "2", "foobar", 1, 3);
+    //ae_add_time_event(base, foobar, "2", "foobar", 1, 3);
+    ae_add_time_event(base, ses_handle_timeout_client, (void *) ping_timeout,
+                      "ses_handle_timeout_client", 1, AE_TIME_EVENT_REPEAT_INFINITE);
 
     ae_run(base, AE_NET_EVENT | AE_TIME_EVENT);
     ae_del(base);

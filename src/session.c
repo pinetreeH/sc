@@ -61,7 +61,7 @@ int ses_add_new_client(int fd, const char *sid) {
     c->heartbeat = util_get_timestamp();
     util_get_fd_ip_port(fd, c->ip, &c->port);
     c->heartbeat_in_ses = heap_insert(sessions.heartbeat,
-                                      (void *) &c->heartbeat, (void *) c);
+                                      (void *) c->heartbeat, (void *) c);
 
     sessions.clients[fd] = c;
 
@@ -149,4 +149,24 @@ int ses_update_client_heartbeat_by_fd(int fd) {
 struct client **ses_get_clients(int *size) {
     *size = sessions.size;
     return sessions.clients;
+}
+
+int ses_handle_timeout_client(struct reactor_base *ae, void *heartbeat_timeout) {
+    UTIL_NOTUSED(ae);
+    if (heap_size(sessions.heartbeat) == 0)
+        return 0;
+    int current_timestamp = util_get_timestamp();
+    int *k = NULL;
+    struct client *c = NULL;
+    do {
+        heap_get_root(sessions.heartbeat, (void **) &k, (void **) &c);
+        if (k == NULL || c == NULL)
+            break;
+        int last_ping_timestamp = (int) k;
+        if (current_timestamp - last_ping_timestamp < (int) heartbeat_timeout)
+            break;
+        log_debug("ses_handle_timeout_client,current timestamp:%d,last ping:%d,sid:%s\n",
+                  current_timestamp, last_ping_timestamp, c->sid);
+        ses_del_client_by_fd(c->fd);
+    } while (1);
 }
