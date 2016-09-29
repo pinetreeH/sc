@@ -30,6 +30,8 @@ extern int util_tcp_send(int fd, const char *data, int len);
 
 extern int util_tcp_recv(int fd, char *data, int len);
 
+extern int util_tcp_shutdown(int fd, int how);
+
 extern void util_set_fd_nonblocking(int fd);
 
 extern int util_get_fd_ip_port(int fd,char *ip,int *port);

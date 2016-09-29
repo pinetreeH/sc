@@ -81,12 +81,10 @@ int ses_del_client_by_fd(int fd) {
 
     struct client *client = sessions.clients[fd];
     sessions.clients[fd] = NULL;
+    //util_tcp_shutdown(client->fd,2);
 
     hashmap_delete(sessions.sid_to_client, (void *) client->sid, 0, 0);
-
-    int heartbeat = -1;
-    minheap_update(sessions.heartbeat, client->heartbeat_in_ses, &heartbeat,
-                   minheap_key_update);
+    minheap_element_del(sessions.heartbeat, client->heartbeat_in_ses);
 
     log_debug("ses_del_client_by_fd,fd:%d,sid:%s\n", fd, client->sid);
 
@@ -151,7 +149,7 @@ struct client **ses_get_clients(int *size) {
     return sessions.clients;
 }
 
-int ses_handle_timeout_client(struct reactor_base *ae, void *heartbeat_timeout) {
+int ses_handle_timeout_client(struct reactor_base *ae, void *data) {
     UTIL_NOTUSED(ae);
     if (heap_size(sessions.heartbeat) == 0)
         return 0;
@@ -163,7 +161,8 @@ int ses_handle_timeout_client(struct reactor_base *ae, void *heartbeat_timeout) 
         if (k == NULL || c == NULL)
             break;
         int last_ping_timestamp = (int) k;
-        if (current_timestamp - last_ping_timestamp < (int) heartbeat_timeout)
+        int heartbeat_timeout = (int) data;
+        if (current_timestamp - last_ping_timestamp < heartbeat_timeout)
             break;
         log_debug("ses_handle_timeout_client,current timestamp:%d,last ping:%d,sid:%s\n",
                   current_timestamp, last_ping_timestamp, c->sid);

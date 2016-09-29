@@ -29,11 +29,13 @@ extern void *heap_root_pos(heap *h);
 // return *k1 - *k2
 typedef int heap_key_update(void *k1, void *k2);
 
-extern void *minheap_update(heap *h, void *elment, void *new_key,
+extern void *minheap_update(heap *h, void *element, void *new_key,
                             heap_key_update *update_fn);
+
+extern void *minheap_element_del(heap *h, void *element);
 
 extern int minheap_key_cmp(void *k1, void *k2);
 
-extern int minheap_key_update(void *k1, void *k2);
+extern int minheap_key_update(void *new_key, void *old_key);
 
 #endif

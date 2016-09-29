@@ -23,16 +23,16 @@ static void handle_tcp_recv(struct reactor_base *base, int fd,
     char buf[TCP_MSG_BUF_LEN] = {'\0'};
     int buf_len = util_tcp_recv(fd, buf, TCP_MSG_BUF_LEN);
     if (buf_len == 0) {
-        log_debug("handleTcpRecv_recv buf_len==0\n");
+        log_debug("handle_tcp_recv buf_len==0\n");
         // close fd and client
         ae_del_net_event(base,fd,AE_NET_EVENT_READ|AE_NET_EVENT_WRITE);
         hdl_recv_close(fd);
     }else if(buf_len <0 ){
-        log_debug("handleTcpRecv_recv buf_len<0,%d\n", buf_len);
+        log_debug("handle_tcp_recv buf_len<0,%d\n", buf_len);
         ae_del_net_event(base,fd,AE_NET_EVENT_READ|AE_NET_EVENT_WRITE);
         hdl_recv_err(fd);
     } else{
-        log_debug("handleTcpRecv_recv:%d,%s\n", buf_len, buf);
+        log_debug("handle_tcp_recv:%d,%s\n", buf_len, buf);
         hdl_recv_data(fd, buf, buf_len);
     }
 }

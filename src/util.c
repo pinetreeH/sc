@@ -102,6 +102,9 @@ int util_tcp_recv(int fd, char *data, int len) {
     return recv(fd, data, len, 0);
 }
 
+int util_tcp_shutdown(int fd, int how) {
+    return shutdown(fd, how);
+}
 
 void util_set_fd_nonblocking(int fd) {
     int old_opt = fcntl(fd, F_GETFL);

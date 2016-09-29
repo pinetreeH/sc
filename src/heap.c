@@ -127,16 +127,16 @@ int minheap_key_cmp(void *k1, void *k2) {
     return (int) k1 <= (int) k2;
 }
 
-int minheap_key_update(void *k1, void *k2) {
-    return (int) k1 - (int) k2;
+int minheap_key_update(void *new_key, void *old_key) {
+    return (int) new_key - (int) old_key;
 }
 
-void *minheap_update(heap *h, void *elment, void *new_key,
+void *minheap_update(heap *h, void *element, void *new_key,
                      heap_key_update *update_fn) {
-    if (!h || !elment)
+    if (!h || !element)
         return NULL;
 
-    heap_element *e = (heap_element *) elment;
+    heap_element *e = (heap_element *) element;
     void *old_key = e->key;
     int add = update_fn(new_key, old_key);
     e->key = new_key;
@@ -147,4 +147,14 @@ void *minheap_update(heap *h, void *elment, void *new_key,
         return heap_reorder_down(h, idx);
     else
         return heap_reorder_up(h, idx);
+}
+
+void *minheap_element_del(heap *h, void *element) {
+    if (!h || !element)
+        return NULL;
+    heap_element *e = (heap_element *) element;
+    e->key = (void *) 0;
+    e->data = NULL;
+    int idx = e - h->elements;
+    return heap_reorder_down(h, idx);
 }

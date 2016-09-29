@@ -37,8 +37,8 @@ int main(int argc, char **args) {
     if (!base)
         exit(EXIT_FAILURE);
 
-    int ping_interval = 10000;
-    int ping_timeout = 20000;
+    int ping_interval = 3000;
+    int ping_timeout = 5000;
     tra_conf_init(ping_interval, ping_timeout);
     char *ip = "127.0.0.1";
     int port = 5074;
@@ -71,7 +71,7 @@ int main(int argc, char **args) {
 
     log_debug("current_timestamp:%d", util_get_timestamp());
     //ae_add_time_event(base, foobar, "2", "foobar", 1, 3);
-    ae_add_time_event(base, ses_handle_timeout_client, (void *) ping_timeout,
+    ae_add_time_event(base, ses_handle_timeout_client, (void *) (ping_timeout / 1000),
                       "ses_handle_timeout_client", 1, AE_TIME_EVENT_REPEAT_INFINITE);
 
     ae_run(base, AE_NET_EVENT | AE_TIME_EVENT);
