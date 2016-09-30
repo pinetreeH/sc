@@ -81,8 +81,6 @@ int ses_del_client_by_fd(int fd) {
 
     struct client *client = sessions.clients[fd];
     sessions.clients[fd] = NULL;
-    //util_tcp_shutdown(client->fd,2);
-
     hashmap_delete(sessions.sid_to_client, (void *) client->sid, 0, 0);
     minheap_element_del(sessions.heartbeat, client->heartbeat_in_ses);
 

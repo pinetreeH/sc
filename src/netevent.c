@@ -27,10 +27,12 @@ static void handle_tcp_recv(struct reactor_base *base, int fd,
         // close fd and client
         ae_del_net_event(base,fd,AE_NET_EVENT_READ|AE_NET_EVENT_WRITE);
         hdl_recv_close(fd);
+        util_tcp_shutdown(fd, 2);
     }else if(buf_len <0 ){
         log_debug("handle_tcp_recv buf_len<0,%d\n", buf_len);
         ae_del_net_event(base,fd,AE_NET_EVENT_READ|AE_NET_EVENT_WRITE);
         hdl_recv_err(fd);
+        util_tcp_shutdown(fd, 2);
     } else{
         log_debug("handle_tcp_recv:%d,%s\n", buf_len, buf);
         hdl_recv_data(fd, buf, buf_len);
@@ -49,9 +51,11 @@ static void handle_admin_tcp_recv(struct reactor_base *base, int fd,
         log_debug("handle_admin_tcp_recv buf_len==0\n");
         // close fd and client
         ae_del_net_event(base, fd, AE_NET_EVENT_READ | AE_NET_EVENT_WRITE);
+        util_tcp_shutdown(fd, 2);
     } else if (buf_len < 0) {
         log_debug("handle_admin_tcp_recv buf_len<0,%d\n", buf_len);
         ae_del_net_event(base, fd, AE_NET_EVENT_READ | AE_NET_EVENT_WRITE);
+        util_tcp_shutdown(fd, 2);
     } else {
         log_debug("handle_admin_tcp_recv>>>:%d,%s\n", buf_len, buf);
         hdl_admin_recv_data(fd, buf, buf_len);
