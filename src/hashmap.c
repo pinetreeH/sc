@@ -11,14 +11,18 @@
 #define MAX_CHAIN_LENGTH 8
 #define HASHMAP_DEFAULT_CAPACITY 128
 
-typedef struct _hashmap_element {
+typedef struct hashmap_element {
     void *key;
     void *value;
-} hashmap_element;
+    struct hashmap_element *pre;
+    struct hashmap_element *next;
+};
 
 struct hashmap {
     int capacity;
     int size;
+    hashmap_element *head;
+    hashmap_element *last;
     hashmap_element *elements;
     hashmap_key_cmp *key_cmp_fn;
     hashmap_value_cmp *value_cmp_fn;
@@ -58,6 +62,7 @@ static int rehash(hashmap *map) {
     map->elements = new_element_space;
     map->capacity = new_capacity;
     map->size = 0;
+    map->head = map->last = NULL;
     int ret = HASHMAP_ERR;
     for (int i = 0; i < pre_size; i++) {
         if (element_space_used(&pre_element_space[i])) {
@@ -131,6 +136,7 @@ hashmap *hashmap_init(int capacity,
     }
     map->capacity = hashmap_capacity;
     map->size = 0;
+    map->head = map->last = NULL;
     map->key_cmp_fn = key_cmp_fn;
     map->value_cmp_fn = value_cmp_fn;
     map->free_key_fn = free_key_fn;
@@ -153,8 +159,17 @@ int hashmap_set(hashmap *map, void *key, void *value) {
         return HASHMAP_ERR;
     }
 
-    map->elements[idx].key = key;
-    map->elements[idx].value = value;
+    hashmap_element *e = &map->elements[idx];
+    e->key = key;
+    e->value = value;
+    e->pre = map->last;
+    e->next = NULL;
+    if (map->last)
+        map->last->next = e;
+    map->last = e;
+    if (!map->head)
+        map->head = e;
+
     map->size++;
     return HASHMAP_OK;
 }
@@ -180,6 +195,15 @@ int hashmap_delete(hashmap *map, void *key,
 
         e->value = NULL;
         map->size--;
+
+        if (e->pre)
+            e->pre->next = e->next;
+        if (e->next)
+            e->next->pre = e->pre;
+        if (e == map->last)
+            map->last = e->pre;
+        if (e == map->head)
+            map->head = NULL;
     }
     return ret;
 }
@@ -203,6 +227,28 @@ int hashmap_free(hashmap *map, int free_key, int free_value) {
     mem_free(map->elements);
     mem_free(map);
     return HASHMAP_OK;
+}
+
+// return next valid hashmap_element pos
+extern hashmap_element *hashmap_next(hashmap *map, hashmap_element *e,
+                                     void **key, void **value) {
+    if (!map)
+        return NULL;
+    if (e) {
+        *key = e->key;
+        *value = e->value;
+        return e->next;
+    }
+    // e == NULL
+    if (map->head) {
+        *key = map->head->key;
+        *value = map->head->value;
+        return map->head->next;
+    }
+    // default
+    *key = NULL;
+    *value = NULL;
+    return NULL;
 }
 
 static uint64_t crc32_tab[] = {

@@ -13,6 +13,8 @@
 
 typedef struct hashmap hashmap;
 
+typedef struct hashmap_element hashmap_element;
+
 typedef void hashmap_free_key(void *key);
 
 typedef void hashmap_free_value(void *value);
@@ -38,6 +40,9 @@ extern int hashmap_get(hashmap *map, void *key, void *value);
 
 extern int hashmap_delete(hashmap *map, void *key, int free_key,
                           int free_value);
+
+extern hashmap_element *hashmap_next(hashmap *map, hashmap_element *e,
+                                     void **key, void **value);
 
 // for specific key value type
 int hashmap_strkey_hashindex(int map_capacity, void *key);
