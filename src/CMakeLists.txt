@@ -6,7 +6,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99")
 set(SOURCE_FILES
         server.c reactor.c netevent.c util.c
         session.c hashmap.c transport.c
-        handler.c heap.c
+        handler.c heap.c room.c
         3rd/http_parser/http_parser.c
         3rd/c-websocket/cWebSockets.c
         3rd/c-websocket/base64.c

@@ -95,7 +95,7 @@ int ses_del_client_by_sid(const char *sid) {
         return -1;
 
     struct client *client = NULL;
-    if (hashmap_get(sessions.sid_to_client, (void *) sid, client)
+    if (hashmap_get(sessions.sid_to_client, (void *) sid, (void **) &client)
         == HASHMAP_OK) {
         sessions.size--;
         return ses_del_client_by_fd(client->fd);
@@ -108,7 +108,7 @@ struct client *ses_get_client_by_sid(const char *sid) {
         return NULL;
 
     struct client *client = NULL;
-    hashmap_get(sessions.sid_to_client, (void *) sid, &client);
+    hashmap_get(sessions.sid_to_client, (void *) sid, (void **) &client);
     return client;
 }
 

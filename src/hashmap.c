@@ -9,7 +9,6 @@
 #include <string.h>
 
 #define MAX_CHAIN_LENGTH 8
-#define HASHMAP_DEFAULT_CAPACITY 128
 
 typedef struct hashmap_element {
     void *key;
@@ -87,12 +86,12 @@ static int find_empty_space(hashmap *map, void *key, void *value,
         }
 
         if (map->key_cmp_fn(&key, &e->key) == 0)
-            return HASHMAP_OK;
+            return HASHMAP_ELEMENT_FOUND;
     }
     return HASHMAP_ELEMENT_FULL;
 }
 
-static int get_value(hashmap *map, void *key, void *value,
+static int get_value(hashmap *map, void *key, void **value,
                      int *element_idx) {
     if (!map)
         return HASHMAP_ERR;
@@ -106,7 +105,7 @@ static int get_value(hashmap *map, void *key, void *value,
         }
         if (map->key_cmp_fn(&key, e) == 0) {
             if (value)
-                value = e->value;
+                *value = e->value;
             if (element_idx)
                 *element_idx = idx + 1;
             return HASHMAP_OK;
@@ -150,31 +149,33 @@ int hashmap_set(hashmap *map, void *key, void *value) {
         return HASHMAP_ERR;
 
     int idx = -1;
-    if (need_rehash(map) ||
-        find_empty_space(map, key, value, &idx) == HASHMAP_ELEMENT_FULL)
+    if (need_rehash(map))
         rehash(map);
 
-    if (find_empty_space(map, key, value, &idx) == HASHMAP_ELEMENT_FULL) {
+    int ret = find_empty_space(map, key, value, &idx);
+    if (ret == HASHMAP_ELEMENT_FULL) {
         log_err("after rehash, find_empty_space still FULL !\n");
         return HASHMAP_ERR;
+    } else if (ret == HASHMAP_ELEMENT_FOUND) {
+        return HASHMAP_OK;
+    } else {
+        hashmap_element *e = &map->elements[idx];
+        e->key = key;
+        e->value = value;
+        e->pre = map->last;
+        e->next = NULL;
+        if (map->last)
+            map->last->next = e;
+        map->last = e;
+        if (!map->head)
+            map->head = e;
+
+        map->size++;
+        return HASHMAP_OK;
     }
-
-    hashmap_element *e = &map->elements[idx];
-    e->key = key;
-    e->value = value;
-    e->pre = map->last;
-    e->next = NULL;
-    if (map->last)
-        map->last->next = e;
-    map->last = e;
-    if (!map->head)
-        map->head = e;
-
-    map->size++;
-    return HASHMAP_OK;
 }
 
-int hashmap_get(hashmap *map, void *key, void *value) {
+int hashmap_get(hashmap *map, void *key, void **value) {
     return get_value(map, key, value, NULL);
 }
 
@@ -206,6 +207,12 @@ int hashmap_delete(hashmap *map, void *key,
             map->head = NULL;
     }
     return ret;
+}
+
+int hashmap_size(hashmap *map) {
+    if (map)
+        return map->size;
+    return 0;
 }
 
 int hashmap_free(hashmap *map, int free_key, int free_value) {
@@ -340,4 +347,12 @@ int hashmap_strkey_hashindex(int map_capacity, void *k) {
 
 int hashmap_strkey_cmp(void *key1, void *key2) {
     return strcmp((char *) key1, (char *) key2);
+}
+
+int hashmap_pointerkey_cmp(void *key1, void *key2) {
+    return key1 == key2 ? 0 : 1;
+}
+
+int hashmap_pointerkey_hashindex(int map_capacity, void *key) {
+    return (int) key % map_capacity;
 }
