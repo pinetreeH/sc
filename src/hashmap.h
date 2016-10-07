@@ -49,13 +49,4 @@ extern int hashmap_size(hashmap *map);
 extern hashmap_element *hashmap_next(hashmap *map, hashmap_element *e,
                                      void **key, void **value);
 
-// for specific key value type
-int hashmap_strkey_hashindex(int map_capacity, void *key);
-
-int hashmap_strkey_cmp(void *key1, void *key2);
-
-int hashmap_pointerkey_cmp(void *key1, void *key2);
-
-int hashmap_pointerkey_hashindex(int map_capacity, void *key);
-
 #endif

@@ -210,6 +210,13 @@ int hdl_broadcast(struct client **except_clients, int client_size,
     return 0;
 }
 
+int hdl_room_broadcast(struct client **except_clients, int client_size,
+                       const char *event, int event_len,
+                       const char *msg, int len,
+                       const char *room_name) {
+
+}
+
 //int hdl_init(void) {
 //    // TODO
 //    nsp_to_handler = hashmap_init(128, hashmap_strkey_cmp,

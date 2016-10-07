@@ -21,7 +21,7 @@ struct client {
     int fd;
     int heartbeat;
     heap *heartbeat_in_ses;
-    char nsp[CLIENT_NSP_MAX];
+  // TODO support multi namespace && room
     //
     char read_buf[CLIENT_BUF_MAX];
     char write_buf[CLIENT_BUF_MAX];
