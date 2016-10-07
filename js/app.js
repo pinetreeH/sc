@@ -20,6 +20,7 @@ function handler (req, res) {
 
 }
 var nsp = io.of('/yy');
+//var nsp = io;
 nsp.on('connection', function (socket) {
       socket.emit('news', { hello: 'world'  });
     socket.on('my other event', function (data) {
