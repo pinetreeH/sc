@@ -15,7 +15,7 @@ typedef struct hashmap_element {
     void *value;
     struct hashmap_element *pre;
     struct hashmap_element *next;
-};
+} hashmap_element;
 
 struct hashmap {
     int capacity;
@@ -28,6 +28,10 @@ struct hashmap {
     hashmap_free_key *free_key_fn;
     hashmap_free_value *free_value_fn;
     hashmap_key_index *key_index_fn;
+};
+
+struct _hashmap_iterator {
+    hashmap_element *e;
 };
 
 static inline int need_rehash(hashmap *map) {
@@ -237,8 +241,20 @@ int hashmap_free(hashmap *map, int free_key, int free_value) {
 }
 
 // return next valid hashmap_element pos
-extern hashmap_element *hashmap_next(hashmap *map, hashmap_element *e,
-                                     void **key, void **value) {
+hashmap_iterator hashmap_next(hashmap *map, hashmap_iterator *e,
+                              void **key, void **value) {
+    hashmap_iterator *next = NULL;
+    do {
+        if (!map)
+            break;
+        if (e) {
+            next = e->next;
+            break;
+        }
+
+
+    } while (0);
+
     if (!map)
         return NULL;
     if (e) {
@@ -256,4 +272,9 @@ extern hashmap_element *hashmap_next(hashmap *map, hashmap_element *e,
     *key = NULL;
     *value = NULL;
     return NULL;
+}
+
+hashmap_iterator *hashmap_head(hashmap *map) {
+    if (map)
+
 }

@@ -214,6 +214,17 @@ int hdl_room_broadcast(struct client **except_clients, int client_size,
                        const char *event, int event_len,
                        const char *msg, int len,
                        const char *room_name) {
+    if (!room_name || !event || !msg)
+        return -1;
+
+    hashmap *room = NULL;
+    room = ses_get_room(room_name);
+    if (!room)
+        return 0;
+
+    hashmap_element *e = NULL;
+    struct client *c = NULL;
+    while (e = hashmap_next(room, e,))
 
 }
 

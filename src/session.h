@@ -7,6 +7,8 @@
 
 //#define ROOM_NAME_MAX 32
 
+#include "hashmap.h"
+
 struct client;
 
 struct reactor_base;
@@ -34,5 +36,7 @@ extern int ses_handle_timeout_client(struct reactor_base *ae, void *heartbeat_ti
 extern int ses_room_join(const char *room_name, struct client *c);
 
 extern int ses_room_leave(const char *room_name, struct client *c);
+
+extern hashmap *ses_get_room(const char *room_name);
 
 #endif

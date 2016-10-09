@@ -15,7 +15,7 @@
 
 typedef struct hashmap hashmap;
 
-typedef struct hashmap_element hashmap_element;
+typedef struct hashmap_iterator hashmap_iterator;
 
 typedef void hashmap_free_key(void *key);
 
@@ -46,7 +46,9 @@ extern int hashmap_delete(hashmap *map, void *key, int free_key,
 
 extern int hashmap_size(hashmap *map);
 
-extern hashmap_element *hashmap_next(hashmap *map, hashmap_element *e,
+extern hashmap_iterator *hashmap_head(hashmap *map);
+
+extern hashmap_iterator *hashmap_next(hashmap *map, hashmap_iterator *e,
                                      void **key, void **value);
 
 #endif

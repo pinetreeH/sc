@@ -197,7 +197,7 @@ int ses_room_jion(const char *room_name, struct client *c) {
     char *room_name_str = (char *) mem_malloc(len + 1);
     strcpy(room_name_str, room_name);
     hashmap_set(sessions.rooms, (void *) room_name_str, (void *) one_room);
-    hashmap_set(one_room, (void *) c, NULL);
+      hashmap_set(one_room, (void *) c, (void *) c);
   } else {
     log_err("room_jion err!\n");
     return -1;
@@ -216,10 +216,18 @@ int ses_room_leave(const char *room_name, struct client *c) {
   if (ret == HASHMAP_OK) {
     hashmap_delete(one_room, (void *) c, 0, 0);
     if (hashmap_size(one_room) == 0) {
-      // TODO free string key function
       hashmap_free(one_room, 0, 0);
       hashmap_delete(sessions.rooms, (void *) room_name, 1, 0);
     }
   }
   return 0;
+}
+
+hashmap *ses_get_room(const char *room_name) {
+    if (!room_name)
+        return NULL;
+
+    hashmap *one_room = NULL;
+    hashmap_get(sessions.rooms, (void *) room_name, (void **) &one_room);
+    return one_room;
 }
