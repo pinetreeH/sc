@@ -30,10 +30,6 @@ struct hashmap {
     hashmap_key_index *key_index_fn;
 };
 
-struct _hashmap_iterator {
-    hashmap_element *e;
-};
-
 static inline int need_rehash(hashmap *map) {
     return map->size >= map->capacity / 2;
 }
@@ -241,40 +237,29 @@ int hashmap_free(hashmap *map, int free_key, int free_value) {
 }
 
 // return next valid hashmap_element pos
-hashmap_iterator hashmap_next(hashmap *map, hashmap_iterator *e,
+hashmap_iterator hashmap_next(hashmap_iterator it,
                               void **key, void **value) {
-    hashmap_iterator *next = NULL;
-    do {
-        if (!map)
-            break;
-        if (e) {
-            next = e->next;
-            break;
-        }
-
-
-    } while (0);
-
-    if (!map)
-        return NULL;
-    if (e) {
-        *key = e->key;
-        *value = e->value;
-        return e->next;
+    hashmap_iterator next_it = {it.map, NULL};
+    if (hashmap_valid_iterator(it)) {
+        hashmap_element *e = (hashmap_element *) it.data;
+        if (key)
+            *key = e->key;
+        if (value)
+            *value = e->value;
+        next_it.data = e->next;
     }
-    // e == NULL
-    if (map->head) {
-        *key = map->head->key;
-        *value = map->head->value;
-        return map->head->next;
-    }
-    // default
-    *key = NULL;
-    *value = NULL;
-    return NULL;
+    return next_it;
 }
 
-hashmap_iterator *hashmap_head(hashmap *map) {
-    if (map)
+hashmap_iterator hashmap_get_iterator(hashmap *map) {
+    hashmap_iterator it = {NULL, NULL};
+    if (map) {
+        it.map = map;
+        it.data = map->head;
+    }
+    return it;
+}
 
+int hashmap_valid_iterator(hashmap_iterator it) {
+    return it.map && it.data;
 }

@@ -222,10 +222,15 @@ int hdl_room_broadcast(struct client **except_clients, int client_size,
     if (!room)
         return 0;
 
-    hashmap_element *e = NULL;
     struct client *c = NULL;
-    while (e = hashmap_next(room, e,))
+    hashmap_iterator it = hashmap_get_iterator(room);
+    while (hashmap_valid_iterator(it)) {
+        it = hashmap_next(it, (void **) &c, NULL);
+        if (c && c->fd > 0 && !in_except_list(except_clients, client_size, c))
+            hdl_emit(c, event, event_len, msg, len);
+    }
 
+    return 0;
 }
 
 //int hdl_init(void) {
