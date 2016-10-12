@@ -9,6 +9,8 @@
 
 #include "hashmap.h"
 
+#define SES_DEFAULT_NSP "/"
+
 struct client;
 
 struct reactor_base;
@@ -33,9 +35,9 @@ extern struct client *ses_get_client_by_sid(const char *sid);
 
 extern int ses_handle_timeout_client(struct reactor_base *ae, void *heartbeat_timeout);
 
-extern int ses_room_join(const char *room_name, struct client *c);
+extern int ses_room_join(const char *nsp, const char *room_name, struct client *c);
 
-extern int ses_room_leave(const char *room_name, struct client *c);
+extern int ses_room_leave(const char *nsp, const char *room_name, struct client *c);
 
 extern hashmap *ses_get_room(const char *room_name);
 
