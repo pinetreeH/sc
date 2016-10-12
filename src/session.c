@@ -177,32 +177,51 @@ int ses_handle_timeout_client(struct reactor_base *ae, void *data) {
     return 0;
 }
 
-int ses_room_jion(const char *nsp, const char *room_name, struct client *c) {
+int ses_room_jion(const char *nsp_name, const char *room_name, struct client *c) {
     if (!room_name || !c)
         return -1;
 
+    int nsp_ret = HASHMAP_ERR;
+    int rooms_ret = HASHMAP_ERR;
     hashmap *one_room = NULL;
-    int ret = hashmap_get(sessions.namespaces, (void *) room_name, (void **) &one_room);
-    if (ret == HASHMAP_OK) {
-        // room exist
-        hashmap_set(one_room, (void *) c, NULL);
-    } else if (ret == HASHMAP_ELEMENT_NOT_FOUND) {
+    hashmap *rooms = NULL;
+    nsp_ret = hashmap_get(sessions.namespaces, (void *) nsp_name, (void **) &rooms);
+    if (nsp_ret == HASHMAP_ERR) {
+        return -1;
+    } else if (nsp_ret == HASHMAP_ELEMENT_NOT_FOUND) {
+        rooms = hashmap_init(HASHMAP_DEFAULT_CAPACITY,
+                             hashmap_strkey_cmp, NULL,
+                             hashmap_strkey_free, NULL,
+                             hashmap_strkey_hashindex);
+        if (!rooms)
+            return -1;
+        int len = strlen(nsp_name);
+        char *nsp_name_str = (char *) mem_malloc(len + 1);
+        strcpy(nsp_name_str, nsp_name);
+        hashmap_set(sessions.namespaces, (void *) nsp_name_str, (void *) rooms);
+        rooms_ret = HASHMAP_ELEMENT_NOT_FOUND;
+    } else if (nsp_ret == HASHMAP_OK) {
+        rooms_ret = hashmap_get(rooms, (void *) room_name, (void **) &one_room);
+    }
+
+    if (rooms_ret == HASHMAP_ELEMENT_NOT_FOUND) {
         // create a new room
         one_room = hashmap_init(HASHMAP_DEFAULT_CAPACITY,
                                 hashmap_pointerkey_cmp, NULL,
                                 NULL, NULL,
-                                hashmap_pointerkey_hashindex);
+                                hashmap_strkey_hashindex);
         if (!one_room)
             return -1;
         int len = strlen(room_name);
         char *room_name_str = (char *) mem_malloc(len + 1);
         strcpy(room_name_str, room_name);
-        hashmap_set(sessions.namespaces, (void *) room_name_str, (void *) one_room);
-        hashmap_set(one_room, (void *) c, (void *) c);
-    } else {
+        hashmap_set(rooms, (void *) room_name_str, (void *) one_room);
+    } else if (rooms_ret == HASHMAP_ERR) {
         log_err("room_jion err!\n");
         return -1;
     }
+
+    hashmap_set(one_room, (void *) c, NULL);
 
     return 0;
 }
