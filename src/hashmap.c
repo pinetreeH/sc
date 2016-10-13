@@ -194,6 +194,7 @@ int hashmap_delete(hashmap *map, void *key,
         if (free_value && map->free_value_fn)
             map->free_value_fn(&e->value);
 
+        e->key = NULL;
         e->value = NULL;
         map->size--;
 
