@@ -150,11 +150,6 @@ int ses_update_client_heartbeat_by_fd(int fd) {
     return 0;
 }
 
-struct client **ses_get_clients(int *size) {
-    *size = sessions.size;
-    return sessions.clients;
-}
-
 int ses_handle_timeout_client(struct reactor_base *ae, void *data) {
     UTIL_NOTUSED(ae);
     if (heap_size(sessions.heartbeat) == 0)
@@ -260,11 +255,24 @@ int ses_room_leave(const char *nsp_name, const char *room_name, struct client *c
     return 0;
 }
 
-hashmap *ses_get_room(const char *room_name) {
-    if (!room_name)
+hashmap *ses_get_room(const char *nsp_name, const char *room_name) {
+    if (!nsp_name || !room_name)
+        return NULL;
+
+    hashmap *rooms = ses_get_rooms(nsp_name);
+    if (!rooms)
         return NULL;
 
     hashmap *one_room = NULL;
-    hashmap_get(sessions.namespaces, (void *) room_name, (void **) &one_room);
+    hashmap_get(rooms, (void *) room_name, (void **) &one_room);
     return one_room;
+}
+
+hashmap *ses_get_rooms(const char *nsp_name) {
+    if (!nsp_name)
+        return NULL;
+
+    hashmap *rooms = NULL;
+    hashmap_get(sessions.namespaces, (void *) nsp_name, (void **) &rooms);
+    return rooms;
 }

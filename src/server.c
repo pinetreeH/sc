@@ -58,6 +58,7 @@ int main(int argc, char **args) {
     tra_http_parse_init();
     tra_default_sio_packet_init();
     ses_init(capacity);
+    hdl_init();
 
     struct handler_if msg_handler;
     msg_handler.on_connect = sc_on_connect;
@@ -67,7 +68,7 @@ int main(int argc, char **args) {
     msg_handler.on_error = sc_on_error;
     msg_handler.on_binary_event = sc_on_binary_event;
     msg_handler.on_binary_ack = sc_on_binary_ack;
-    hdl_register_handler(NULL, &msg_handler);
+    hdl_register_handler(SES_DEFAULT_NSP, &msg_handler);
 
     log_debug("current_timestamp:%d", util_get_timestamp());
     //ae_add_time_event(base, foobar, "2", "foobar", 1, 3);
@@ -96,8 +97,8 @@ void sc_on_event(int fd, const char *data, int len) {
     sprintf(client_msg, "{\"hello\":\"your sid:%s\"}", c->sid);
     char bro_msg[256] = {0};
     sprintf(bro_msg, "{\"hello_all\":\"welcome new client:%s\"}", c->sid);
-    hdl_emit(c, event, strlen(event), client_msg, strlen(client_msg));
-    hdl_broadcast(&c, 1, event, strlen(event), bro_msg, strlen(bro_msg));
+    hdl_emit(SES_DEFAULT_NSP, c, event, strlen(event), client_msg, strlen(client_msg));
+    hdl_broadcast(SES_DEFAULT_NSP, &c, 1, event, strlen(event), bro_msg, strlen(bro_msg));
 }
 
 void sc_on_ack(int fd, const char *data, int len) {

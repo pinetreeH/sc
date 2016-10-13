@@ -71,6 +71,8 @@ extern int tra_ws_set_content(const char *data, int data_len, char *dst,
 extern int tra_ws_get_content(const char *data, int data_len, char *dst,
                               int dst_len);
 
+extern int tra_get_nsp(const char *data, int data_len, char *dst, int dst_len);
+
 extern void tra_default_sio_packet_init(void);
 
 extern const char *tra_get_sio_connect_packet(void);

@@ -27,8 +27,6 @@ extern int ses_new_connection(int fd, const char *data, int data_len);
 
 extern int ses_update_client_heartbeat_by_fd(int fd);
 
-extern struct client **ses_get_clients(int *size);
-
 extern struct client *ses_get_client_by_fd(int fd);
 
 extern struct client *ses_get_client_by_sid(const char *sid);
@@ -39,6 +37,8 @@ extern int ses_room_join(const char *nsp_name, const char *room_name, struct cli
 
 extern int ses_room_leave(const char *nsp_name, const char *room_name, struct client *c);
 
-extern hashmap *ses_get_room(const char *room_name);
+extern hashmap *ses_get_room(const char *nsp_name, const char *room_name);
+
+extern hashmap *ses_get_rooms(const char *nsp_name);
 
 #endif

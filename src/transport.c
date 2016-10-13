@@ -182,8 +182,10 @@ int tra_sio_encode(tra_sio_packet_type sio_type,
     int idx = 0;
     char sio_data[TRA_WS_RESP_MAX] = {0};
     sio_data[idx++] = get_sio_type(sio_type);//'2'
-    UTIL_NOTUSED(nsp);
-    UTIL_NOTUSED(nsp_len);
+    for (int t = 0; t < nsp_len; t++) {
+        sio_data[idx++] = nsp[t];
+    }
+    sio_data[idx++] = ',';
     sio_data[idx++] = '[';
     for (int t = 0; t < event_len; t++) {
         sio_data[idx++] = event[t];
@@ -328,3 +330,14 @@ int tra_get_ping_timeout(void) {
     return ping_timeout;
 }
 
+int tra_get_nsp(const char *data, int data_len, char *dst, int dst_len) {
+    if (data[0] != '/')
+        return 0;
+
+    UTIL_NOTUSED(dst_len);
+    int idx = 0;
+    for (; data[idx] != ',' && idx < data_len; idx++) {
+        dst[idx] = data[idx];
+    }
+    return idx;
+}

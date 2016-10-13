@@ -9,13 +9,19 @@
 #include "hashmap.h"
 #include "client.h"
 #include "util.h"
+#include "helper.h"
 #include <string.h>
 #include <stdio.h>
 
 #define TMP_MSG_MAX 256
 
-//static hashmap *nsp_to_handler;
-static struct handler_if msg_handler;
+// namespace -> handler
+static hashmap *nsp_to_handler;
+
+static int in_except_list(struct client **except_clients,
+                          int client_size, struct client *c);
+
+static int handle_sio_msg_packet(int fd, const char *data, int len);
 
 static int handle_new_connection(int fd, const char *data, int len) {
     // this is a new client, parse http request
@@ -58,30 +64,47 @@ static int handle_eio_ping_packet(int fd) {
 }
 
 static int handle_sio_msg_packet(int fd, const char *data, int len) {
+    struct handler_if *msg_handler = NULL;
     char client_msg[TMP_MSG_MAX] = {'\0'};
     log_debug("EIO_PACKET_MESSAGE content,%s\n", data);
     tra_sio_packet_type sio_type = tra_sio_decode(data, len);
+    char nsp_name[TMP_MSG_MAX] = {'\0'};
+    char *nsp = NULL;
+    int nsp_len = tra_get_nsp(data + 1, len - 1, nsp_name, TMP_MSG_MAX);
+    if (nsp_len == 0) {
+        nsp = SES_DEFAULT_NSP;
+    } else if (nsp_len > 0) {
+        nsp = nsp_name;
+    } else {
+        return -1;
+    }
+
+    int ret = hashmap_get(nsp_to_handler, (void *) nsp, (void **) &msg_handler);
+    if (ret != HASHMAP_OK) {
+        return -1;
+    }
+
     switch (sio_type) {
         case TRA_SIO_PACKET_CONNECT:
-            msg_handler.on_connect(fd, data + 1, len - 1);
+            msg_handler->on_connect(fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_DISCONNECT:
-            msg_handler.on_disconnect(fd, data + 1, len - 1);
+            msg_handler->on_disconnect(fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_EVENT:
-            msg_handler.on_event(fd, data + 1, len - 1);
+            msg_handler->on_event(fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_ACK:
-            msg_handler.on_ack(fd, data + 1, len - 1);
+            msg_handler->on_ack(fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_ERROR:
-            msg_handler.on_error(fd, data + 1, len - 1);
+            msg_handler->on_error(fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_BINARY_EVENT:
-            msg_handler.on_binary_event(fd, data + 1, len - 1);
+            msg_handler->on_binary_event(fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_BINARY_ACK:
-            msg_handler.on_binary_ack(fd, data + 1, len - 1);
+            msg_handler->on_binary_ack(fd, data + 1, len - 1);
             break;
         default:
             break;
@@ -102,7 +125,8 @@ static int handle_client_msg(int fd, const char *data, int len) {
         case TRA_EIO_PACKET_PING:
             handle_eio_ping_packet(fd);
             break;
-        case TRA_EIO_PACKET_PONG: // this case will not happen!
+        case TRA_EIO_PACKET_PONG:
+            // this case will not happen!
             break;
         case TRA_EIO_PACKET_MESSAGE:
             handle_sio_msg_packet(fd, msg + 1, msg_len - 1);
@@ -141,7 +165,7 @@ int hdl_admin_recv_data(int fd, const char *data, int len) {
         char bro_msg[TMP_MSG_MAX * 2] = {0};
         sprintf(bro_msg, "{\"admin\":\"msg:%s\"}", test_admin_msg);
         log_debug("admin_msg:%s\n", bro_msg);
-        hdl_broadcast(NULL, 0, event, strlen(event), bro_msg, strlen(bro_msg));
+        //hdl_broadcast(NULL, 0, event, strlen(event), bro_msg, strlen(bro_msg));
     }
 }
 
@@ -153,23 +177,21 @@ int hdl_recv_err(int fd) {
     return ses_del_client_by_fd(fd);
 }
 
-int hdl_register_handler(const char *nsp, struct handler_if *h) {
-    UTIL_NOTUSED(nsp);
-    if (!h)
-        return -1;
-
-    msg_handler = *h;
-    return 0;
+int hdl_register_handler(const char *nsp_name, struct handler_if *h) {
+    return hashmap_set(nsp_to_handler, (void *) nsp_name, (void *) h);
 }
 
-int hdl_emit(struct client *c, const char *event, int event_len,
+int hdl_emit(const char *nsp_name, struct client *c,
+             const char *event, int event_len,
              const char *msg, int len) {
     if (!c || !event || !msg || len <= 0 || c->fd <= 0)
         return -1;
     char encode_data[TRA_WS_RESP_MAX] = {0};
 
     int encode_len = -1;
-    encode_len = tra_sio_encode(TRA_SIO_PACKET_EVENT, NULL, 0, event, event_len, msg, len,
+    encode_len = tra_sio_encode(TRA_SIO_PACKET_EVENT,
+                                nsp_name, strlen(nsp_name),
+                                event, event_len, msg, len,
                                 encode_data, TRA_WS_RESP_MAX);
 
     log_debug("hdl_emit data len:%d\n", encode_len);
@@ -178,8 +200,8 @@ int hdl_emit(struct client *c, const char *event, int event_len,
     return 0;
 }
 
-static inline int in_except_list(struct client **except_clients,
-                                 int client_size, struct client *c) {
+int in_except_list(struct client **except_clients,
+                   int client_size, struct client *c) {
     if (!except_clients || client_size == 0)
         return 0;
 
@@ -191,34 +213,39 @@ static inline int in_except_list(struct client **except_clients,
     return 0;
 }
 
-int hdl_broadcast(struct client **except_clients, int client_size,
+int hdl_broadcast(const char *nsp_name,
+                  struct client **except_clients, int client_size,
                   const char *event, int event_len,
                   const char *msg, int len) {
-    int size = 0;
-    struct client **cs = ses_get_clients(&size);
-    int idx = 0;
-    struct client *c = NULL;
-    while (size > 0) {
-        c = cs[idx++];
-        if (c && c->fd > 0) {
-            if (!in_except_list(except_clients, client_size, c)) {
-                hdl_emit(c, event, event_len, msg, len);
-            }
-            size--;
-        }
+
+    hashmap *rooms = NULL;
+    rooms = ses_get_rooms(nsp_name);
+    if (!rooms)
+        return 0;
+    if (hashmap_size(rooms) == 0)
+        return 0;
+
+    char *room_name = NULL;
+    hashmap *one_room = NULL;
+    hashmap_iterator it = hashmap_get_iterator(rooms);
+    while (hashmap_valid_iterator(it)) {
+        it = hashmap_next(it, (void **) &room_name, (void **) &one_room);
+        hdl_room_broadcast(nsp_name, room_name, except_clients, client_size,
+                           event, event_len, msg, len);
     }
+
     return 0;
 }
 
-int hdl_room_broadcast(struct client **except_clients, int client_size,
+int hdl_room_broadcast(const char *nsp_name, const char *room_name,
+                       struct client **except_clients, int client_size,
                        const char *event, int event_len,
-                       const char *msg, int len,
-                       const char *room_name) {
-    if (!room_name || !event || !msg)
+                       const char *msg, int len) {
+    if (!nsp_name || !room_name || !event || !msg)
         return -1;
 
     hashmap *room = NULL;
-    room = ses_get_room(room_name);
+    room = ses_get_room(nsp_name, room_name);
     if (!room)
         return 0;
 
@@ -227,19 +254,19 @@ int hdl_room_broadcast(struct client **except_clients, int client_size,
     while (hashmap_valid_iterator(it)) {
         it = hashmap_next(it, (void **) &c, NULL);
         if (c && c->fd > 0 && !in_except_list(except_clients, client_size, c))
-            hdl_emit(c, event, event_len, msg, len);
+            hdl_emit(nsp_name, c, event, event_len, msg, len);
     }
 
     return 0;
 }
 
-//int hdl_init(void) {
-//    // TODO
-//    nsp_to_handler = hashmap_init(128, hashmap_strkey_cmp,
-//                                  NULL, NULL, NULL,
-//                                  hashmap_strkey_hashindex);
-//    if (!nsp_to_handler)
-//        return -1;
-//
-//    return 0;
-//}
+int hdl_init(void) {
+    nsp_to_handler = hashmap_init(HASHMAP_DEFAULT_CAPACITY,
+                                  hashmap_strkey_cmp, NULL,
+                                  hashmap_strkey_free, NULL,
+                                  hashmap_strkey_hashindex);
+    if (!nsp_to_handler)
+        return -1;
+
+    return 0;
+}
