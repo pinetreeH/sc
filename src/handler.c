@@ -15,7 +15,7 @@
 
 #define TMP_MSG_MAX 256
 
-// namespace -> handler
+// nsp -> handler
 static hashmap *nsp_to_handler;
 
 static int in_except_list(struct client **except_clients,
