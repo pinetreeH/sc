@@ -75,7 +75,7 @@ static uint64_t crc32(const unsigned char *s, unsigned int len) {
   return crc32val;
 }
 
-int hashmap_strkey_hashindex(int map_capacity, void *k) {
+int str_hashindex(int map_capacity, void *k) {
   int len = strlen((char *) k);
   uint64_t key = crc32((unsigned char *) k, len);
 
@@ -94,19 +94,19 @@ int hashmap_strkey_hashindex(int map_capacity, void *k) {
   return key % map_capacity;
 }
 
-int hashmap_strkey_cmp(void *key1, void *key2) {
+int str_cmp(void *key1, void *key2) {
   return strcmp((char *) key1, (char *) key2);
 }
 
-int hashmap_pointerkey_cmp(void *key1, void *key2) {
+int pointer_cmp(void *key1, void *key2) {
   return key1 == key2 ? 0 : 1;
 }
 
-int hashmap_pointerkey_hashindex(int map_capacity, void *key) {
+int pointer_hashindex(int map_capacity, void *key) {
   return (int) key % map_capacity;
 }
 
-int hashmap_strkey_free(void *key) {
+int str_free(void *key) {
   mem_free((char *) key);
   return 0;
 }

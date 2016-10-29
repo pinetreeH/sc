@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <sys/epoll.h>
 
-#define DEFAULT_WAIT_TIME 10
+#define DEFAULT_WAIT_TIME 10 // millisecond
 
 struct net_event {
     int mask;

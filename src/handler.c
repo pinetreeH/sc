@@ -184,7 +184,7 @@ int hdl_register_handler(const char *nsp_name, struct handler_if *h) {
 int hdl_emit(const char *nsp_name, struct client *c,
              const char *event, int event_len,
              const char *msg, int len) {
-    if (!c || !event || !msg || len <= 0 || c->fd <= 0)
+    if (!c || !event || !msg || len <= 0)
         return -1;
     char encode_data[TRA_WS_RESP_MAX] = {0};
 
@@ -253,7 +253,7 @@ int hdl_room_broadcast(const char *nsp_name, const char *room_name,
     hashmap_iterator it = hashmap_get_iterator(room);
     while (hashmap_valid_iterator(it)) {
         it = hashmap_next(it, (void **) &c, NULL);
-        if (c && c->fd > 0 && !in_except_list(except_clients, client_size, c))
+        if (c && !in_except_list(except_clients, client_size, c))
             hdl_emit(nsp_name, c, event, event_len, msg, len);
     }
 
@@ -262,9 +262,9 @@ int hdl_room_broadcast(const char *nsp_name, const char *room_name,
 
 int hdl_init(void) {
     nsp_to_handler = hashmap_init(HASHMAP_DEFAULT_CAPACITY,
-                                  hashmap_strkey_cmp, NULL,
-                                  hashmap_strkey_free, NULL,
-                                  hashmap_strkey_hashindex);
+                                  str_cmp, NULL,
+                                  str_free, NULL,
+                                  str_hashindex);
     if (!nsp_to_handler)
         return -1;
 

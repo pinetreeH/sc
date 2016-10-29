@@ -123,3 +123,30 @@ int util_get_fd_ip_port(int fd,char *ip,int *port){
     }
     return -1;
 }
+
+int util_init_socket(char *ip, int port) {
+    struct sockaddr_in addr;
+    bzero(&addr, sizeof(addr));
+    addr.sin_family = AF_INET;
+    inet_pton(AF_INET, ip, &addr.sin_addr);
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    int listenfd = socket(PF_INET, SOCK_STREAM, 0);
+    if (listenfd == -1) {
+        log_err("call socket fail!\n");
+        exit(EXIT_FAILURE);
+    }
+    int reuse = 1;
+    setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+    int ret = bind(listenfd, (struct sockaddr *) &addr, sizeof(addr));
+    if (ret == -1) {
+        log_err("call bind fail!\n");
+        exit(EXIT_FAILURE);
+    }
+    ret = listen(listenfd, 10);
+    if (ret == -1) {
+        log_err("call listen fail!\n");
+        exit(EXIT_FAILURE);
+    }
+    return listenfd;
+}

@@ -43,7 +43,7 @@ int main(int argc, char **args) {
     char *ip = "127.0.0.1";
     int port = 5074;
     int admin_port = 9527;
-    int sockfd = net_init_socket(ip, port);
+    int sockfd = util_init_socket(ip, port);
     util_set_fd_nonblocking(sockfd);
     ae_add_net_event(base, sockfd, AE_NET_EVENT_READ,
                      net_server_accpet, NULL,
@@ -83,6 +83,7 @@ int main(int argc, char **args) {
 
 void sc_on_connect(int fd, const char *data, int len) {
     log_debug("socket.io connect packet, fd:%d, data:%s", fd, data);
+    hdl_default_on_connect(fd, data, len);
 }
 
 void sc_on_disconnect(int fd, const char *data, int len) {

@@ -27,17 +27,17 @@ static struct session sessions;
 int ses_init(int capacity) {
     sessions.capacity = capacity;
     sessions.size = 0;
-    sessions.sid_to_client = hashmap_init(capacity, hashmap_strkey_cmp,
+    sessions.sid_to_client = hashmap_init(capacity, str_cmp,
                                           NULL, NULL, NULL,
-                                          hashmap_strkey_hashindex);
+                                          str_hashindex);
     sessions.clients = (struct client **)
             mem_calloc(capacity, sizeof(struct client *));
 
     sessions.heartbeat = heap_init(capacity, minheap_key_cmp);
 
-    sessions.namespaces = hashmap_init(capacity, hashmap_strkey_cmp, NULL,
-                                       hashmap_strkey_free, NULL,
-                                       hashmap_strkey_hashindex);
+    sessions.namespaces = hashmap_init(capacity, str_cmp, NULL,
+                                       str_free, NULL,
+                                       str_hashindex);
 
     if (!sessions.sid_to_client)
         return -1;
@@ -185,9 +185,9 @@ int ses_room_jion(const char *nsp_name, const char *room_name, struct client *c)
         return -1;
     } else if (rooms_ret == HASHMAP_ELEMENT_NOT_FOUND) {
         rooms = hashmap_init(HASHMAP_DEFAULT_CAPACITY,
-                             hashmap_strkey_cmp, NULL,
-                             hashmap_strkey_free, NULL,
-                             hashmap_strkey_hashindex);
+                             str_cmp, NULL,
+                             str_free, NULL,
+                             str_hashindex);
         if (!rooms)
             return -1;
         int len = strlen(nsp_name);
@@ -205,9 +205,9 @@ int ses_room_jion(const char *nsp_name, const char *room_name, struct client *c)
     } else if (one_room_ret == HASHMAP_ELEMENT_NOT_FOUND) {
         // create a new room
         one_room = hashmap_init(HASHMAP_DEFAULT_CAPACITY,
-                                hashmap_pointerkey_cmp, NULL,
+                                pointer_cmp, NULL,
                                 NULL, NULL,
-                                hashmap_strkey_hashindex);
+                                str_hashindex);
         if (!one_room)
             return -1;
         int len = strlen(room_name);

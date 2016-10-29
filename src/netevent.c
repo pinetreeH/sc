@@ -62,33 +62,6 @@ static void handle_admin_tcp_recv(struct reactor_base *base, int fd,
     }
 }
 
-int net_init_socket(char *ip, int port) {
-    struct sockaddr_in addr;
-    bzero(&addr, sizeof(addr));
-    addr.sin_family = AF_INET;
-    inet_pton(AF_INET, ip, &addr.sin_addr);
-    addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    int listenfd = socket(PF_INET, SOCK_STREAM, 0);
-    if (listenfd == -1) {
-        log_err("call socket fail!\n");
-        exit(EXIT_FAILURE);
-    }
-    int reuse = 1;
-    setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
-    int ret = bind(listenfd, (struct sockaddr *) &addr, sizeof(addr));
-    if (ret == -1) {
-        log_err("call bind fail!\n");
-        exit(EXIT_FAILURE);
-    }
-    ret = listen(listenfd, 10);
-    if (ret == -1) {
-        log_err("call listen fail!\n");
-        exit(EXIT_FAILURE);
-    }
-    return listenfd;
-}
-
 void net_server_accpet(struct reactor_base *base, int fd, void *fd_parameter,
                        int mask) {
     UTIL_NOTUSED(base);

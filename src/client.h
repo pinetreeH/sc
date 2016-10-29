@@ -2,33 +2,37 @@
 // Created by pinetree on 9/24/16.
 //
 
-#ifndef SC_CLIENT_H
-#define SC_CLIENT_H
+#ifndef SC_CLIENT_CLENT_H
+#define SC_CLIENT_CLENT_H
 
-#include "heap.h"
-#include <arpa/inet.h>
+struct client;
 
-#define CLIENT_SID_MAX 48
-#define CLIENT_NSP_MAX 32
-#define CLIENT_BUF_MAX (1024*16)
+extern struct client *client_new(void);
 
-struct client {
-    // default transport "websocket"
-    // TODO ipv6
-    char sid[CLIENT_SID_MAX];
-    char ip[INET_ADDRSTRLEN];
-    int port;
-    int fd;
-    int heartbeat;
-    heap *heartbeat_in_ses;
-  // TODO support multi namespace && room
-    //
-    char read_buf[CLIENT_BUF_MAX];
-    char write_buf[CLIENT_BUF_MAX];
-    int read_start_idx;
-    int read_end_idx;
-    int write_stat_idx;
-    int write_end_idx;
-};
+extern int client_del(void *c);
 
-#endif //SC_CLIENT_H
+extern int client_set_sid(struct client *c, const char *sid);
+
+extern int client_set_ip(struct client *c, const char *ip);
+
+extern int client_set_port(struct client *c, int port);
+
+extern int client_set_fd(struct client *c, int fd);
+
+extern int client_set_heartbeat(struct client *c, int heartbeart);
+
+extern const char *client_get_sid(struct client *c);
+
+extern const char *client_get_ip(struct client *c);
+
+extern int client_get_port(struct client *c);
+
+extern int client_get_fd(struct client *c);
+
+extern int client_get_heartbeat(struct client *c);
+
+extern int client_set_hearbeat_ptr(struct client *c, void *ptr);
+
+extern void *client_get_hearbeat_ptr(struct client *c);
+
+#endif
