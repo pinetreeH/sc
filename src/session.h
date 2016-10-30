@@ -1,44 +1,34 @@
 //
-// Created by pinetree on 16-9-10.
+// Created by pinetree on 16-10-29.
 //
 
 #ifndef SC_SESSION_SES_H
 #define SC_SESSION_SES_H
 
-//#define ROOM_NAME_MAX 32
-
-#include "hashmap.h"
-
-#define SES_DEFAULT_NSP "/"
-
-struct client;
-
 struct reactor_base;
+struct client;
+struct session;
 
-extern int ses_init(int capacity);
+extern struct session *ses_init(int capacity);
 
-extern int ses_add_new_client(int fd, const char *sid);
+extern int ses_add_client(struct session *s, struct client *c);
 
-extern int ses_del_client_by_fd(int fd);
+extern int ses_del_client_by_fd(struct session *s, int fd);
 
-extern int ses_del_client_by_sid(const char *sid);
+extern struct client *ses_get_client_by_fd(struct session *s, int fd);
 
-extern int ses_new_connection(int fd, const char *data, int data_len);
+extern struct client *ses_get_client_by_sid(struct session *s,
+                                            const char *sid);
 
-extern int ses_update_client_heartbeat_by_fd(int fd);
+extern int ses_update_client_heartbeat(struct session *s,
+                                       struct client *c,
+                                       int new_heartbeat);
 
-extern struct client *ses_get_client_by_fd(int fd);
+extern int ses_handle_timeout_client(struct session *s,
+                                     struct reactor_base *ae,
+                                     void *heartbeat_timeout);
 
-extern struct client *ses_get_client_by_sid(const char *sid);
-
-extern int ses_handle_timeout_client(struct reactor_base *ae, void *heartbeat_timeout);
-
-extern int ses_room_join(const char *nsp_name, const char *room_name, struct client *c);
-
-extern int ses_room_leave(const char *nsp_name, const char *room_name, struct client *c);
-
-extern hashmap *ses_get_room(const char *nsp_name, const char *room_name);
-
-extern hashmap *ses_get_rooms(const char *nsp_name);
+extern int ses_is_new_connection(struct session *s, int fd,
+                                 const char *data, int len);
 
 #endif

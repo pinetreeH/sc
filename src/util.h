@@ -38,4 +38,6 @@ extern int util_get_fd_ip_port(int fd,char *ip,int *port);
 
 extern int util_init_socket(char *ip, int port);
 
+extern int util_tcp_accept(int listen_fd);
+
 #endif

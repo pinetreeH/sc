@@ -6,24 +6,20 @@
 #include "handler_if.h"
 #include "session.h"
 #include "transport.h"
+#include "reactor.h"
 #include "hashmap.h"
 #include "client.h"
 #include "util.h"
 #include "helper.h"
+#include "server.h"
 #include <string.h>
 #include <stdio.h>
 
 #define TMP_MSG_MAX 256
+#define TCP_MSG_BUF_LEN (1024*16)
 
-// nsp -> handler
-static hashmap *nsp_to_handler;
-
-static int in_except_list(struct client **except_clients,
-                          int client_size, struct client *c);
-
-static int handle_sio_msg_packet(int fd, const char *data, int len);
-
-static int handle_new_connection(int fd, const char *data, int len) {
+static int handle_new_connection(struct session *s, int fd,
+                                 const char *data, int len) {
     // this is a new client, parse http request
     struct http_request_info info;
     tra_parse_http_req(data, len, &info);
@@ -36,7 +32,7 @@ static int handle_new_connection(int fd, const char *data, int len) {
         // send {sid,upgrade,pingTimeout} ...
         char sid[TRA_SID_STR_MAX] = {'\0'};
         util_gen_sid_by_fd(fd, sid);
-        char transport_config_msg[256];
+        char transport_config_msg[TMP_MSG_MAX];
         tra_get_conf(sid, transport_config_msg);
         int config_msg_len = strlen(transport_config_msg);
         char encode_msg[TMP_MSG_MAX];
@@ -47,64 +43,51 @@ static int handle_new_connection(int fd, const char *data, int len) {
 
         util_tcp_send(fd, encode_msg, encode_data_len);
         // after send config msg, we create a new client
-        ses_add_new_client(fd, sid);
+        struct client *c = client_new(fd, sid);
+        ses_add_client(s, c);
         // send CONNECT packet
-        util_tcp_send(fd, tra_get_sio_connect_packet(),
-                      tra_get_sio_connect_packet_len());
+        client_send_data(c, tra_get_sio_connect_packet(),
+                         tra_get_sio_connect_packet_len());
     }
     return 0;
 }
 
-static int handle_eio_ping_packet(int fd) {
+static int handle_eio_ping_packet(struct session *s, int fd) {
     // update client heartbeat
-    ses_update_client_heartbeat_by_fd(fd);
+    struct client *c = NULL;
+    c = ses_get_client_by_fd(s, fd);
+    ses_update_client_heartbeat(s, c, util_get_timestamp());
     // send PONG packet
-    util_tcp_send(fd, tra_get_sio_pong_packet(), tra_get_sio_pong_packet_len());
-
+    return client_send_data(c, tra_get_sio_pong_packet(),
+                            tra_get_sio_pong_packet_len());
 }
 
-static int handle_sio_msg_packet(int fd, const char *data, int len) {
-    struct handler_if *msg_handler = NULL;
-    char client_msg[TMP_MSG_MAX] = {'\0'};
+static int handle_sio_msg_packet(struct handler_if *handler, int fd,
+                                 const char *data, int len) {
     log_debug("EIO_PACKET_MESSAGE content,%s\n", data);
     tra_sio_packet_type sio_type = tra_sio_decode(data, len);
-    char nsp_name[TMP_MSG_MAX] = {'\0'};
-    char *nsp = NULL;
-    int nsp_len = tra_get_nsp(data + 1, len - 1, nsp_name, TMP_MSG_MAX);
-    if (nsp_len == 0) {
-        nsp = SES_DEFAULT_NSP;
-    } else if (nsp_len > 0) {
-        nsp = nsp_name;
-    } else {
-        return -1;
-    }
-
-    int ret = hashmap_get(nsp_to_handler, (void *) nsp, (void **) &msg_handler);
-    if (ret != HASHMAP_OK) {
-        return -1;
-    }
 
     switch (sio_type) {
         case TRA_SIO_PACKET_CONNECT:
-            msg_handler->on_connect(fd, data + 1, len - 1);
+            handler->on_connect(fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_DISCONNECT:
-            msg_handler->on_disconnect(fd, data + 1, len - 1);
+            handler->on_disconnect(fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_EVENT:
-            msg_handler->on_event(fd, data + 1, len - 1);
+            handler->on_event(fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_ACK:
-            msg_handler->on_ack(fd, data + 1, len - 1);
+            handler->on_ack(fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_ERROR:
-            msg_handler->on_error(fd, data + 1, len - 1);
+            handler->on_error(fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_BINARY_EVENT:
-            msg_handler->on_binary_event(fd, data + 1, len - 1);
+            handler->on_binary_event(fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_BINARY_ACK:
-            msg_handler->on_binary_ack(fd, data + 1, len - 1);
+            handler->on_binary_ack(fd, data + 1, len - 1);
             break;
         default:
             break;
@@ -112,7 +95,7 @@ static int handle_sio_msg_packet(int fd, const char *data, int len) {
     return 0;
 }
 
-static int handle_client_msg(int fd, const char *data, int len) {
+static int handle_client_msg(struct server *srv, int fd, const char *data, int len) {
     char msg[TMP_MSG_MAX] = {0};
     int msg_len = tra_ws_get_content(data, len, msg, TMP_MSG_MAX);
 
@@ -123,33 +106,24 @@ static int handle_client_msg(int fd, const char *data, int len) {
         case TRA_EIO_PACKET_CLOSE:
             break;
         case TRA_EIO_PACKET_PING:
-            handle_eio_ping_packet(fd);
+            handle_eio_ping_packet(srv->ses, fd);
             break;
         case TRA_EIO_PACKET_PONG:
-            // this case will not happen!
+            // this case will not happen
             break;
         case TRA_EIO_PACKET_MESSAGE:
-            handle_sio_msg_packet(fd, msg + 1, msg_len - 1);
+            handle_sio_msg_packet(srv->handler, fd, msg + 1, msg_len - 1);
             break;
         case TRA_EIO_PACKET_UPGRADE:
+            // this case will not happen
             break;
         case TRA_EIO_PACKET_NOOP:
+            // this case will not happen
             break;
         default:
             break;
     }
     return 0;
-}
-
-int hdl_recv_data(int fd, const char *data, int len) {
-    if (ses_new_connection(fd, data, len)) {
-        log_debug("ses_new_connection,fd:%d\n", fd);
-        handle_new_connection(fd, data, len);
-    } else {
-        // exist client, parse msg by transport protocol
-        log_debug("exist client,fd:%d\n", fd);
-        handle_client_msg(fd, data, len);
-    }
 }
 
 int hdl_admin_recv_data(int fd, const char *data, int len) {
@@ -169,39 +143,8 @@ int hdl_admin_recv_data(int fd, const char *data, int len) {
     }
 }
 
-int hdl_recv_close(int fd) {
-    return ses_del_client_by_fd(fd);
-}
-
-int hdl_recv_err(int fd) {
-    return ses_del_client_by_fd(fd);
-}
-
-int hdl_register_handler(const char *nsp_name, struct handler_if *h) {
-    return hashmap_set(nsp_to_handler, (void *) nsp_name, (void *) h);
-}
-
-int hdl_emit(const char *nsp_name, struct client *c,
-             const char *event, int event_len,
-             const char *msg, int len) {
-    if (!c || !event || !msg || len <= 0)
-        return -1;
-    char encode_data[TRA_WS_RESP_MAX] = {0};
-
-    int encode_len = -1;
-    encode_len = tra_sio_encode(TRA_SIO_PACKET_EVENT,
-                                nsp_name, strlen(nsp_name),
-                                event, event_len, msg, len,
-                                encode_data, TRA_WS_RESP_MAX);
-
-    log_debug("hdl_emit data len:%d\n", encode_len);
-    util_tcp_send(c->fd, encode_data, encode_len);
-
-    return 0;
-}
-
-int in_except_list(struct client **except_clients,
-                   int client_size, struct client *c) {
+static int in_except_list(struct client **except_clients,
+                          int client_size, struct client *c) {
     if (!except_clients || client_size == 0)
         return 0;
 
@@ -213,7 +156,24 @@ int in_except_list(struct client **except_clients,
     return 0;
 }
 
-int hdl_broadcast(const char *nsp_name,
+int hdl_emit(struct client *c,
+             const char *event, int event_len,
+             const char *msg, int len) {
+    if (!c || !event || !msg || len <= 0)
+        return -1;
+    char encode_data[TRA_WS_RESP_MAX] = {0};
+    int encode_len = -1;
+    encode_len = tra_sio_encode(TRA_SIO_PACKET_EVENT,
+                                NULL, 0,
+                                event, event_len, msg, len,
+                                encode_data, TRA_WS_RESP_MAX);
+
+    log_debug("hdl_emit data len:%d\n", encode_len);
+    client_send_data(c, encode_data, encode_len);
+    return 0;
+}
+
+int hdl_broadcast(struct session *s,
                   struct client **except_clients, int client_size,
                   const char *event, int event_len,
                   const char *msg, int len) {
@@ -260,13 +220,81 @@ int hdl_room_broadcast(const char *nsp_name, const char *room_name,
     return 0;
 }
 
-int hdl_init(void) {
-    nsp_to_handler = hashmap_init(HASHMAP_DEFAULT_CAPACITY,
-                                  str_cmp, NULL,
-                                  str_free, NULL,
-                                  str_hashindex);
-    if (!nsp_to_handler)
-        return -1;
+static void handle_tcp_recv(struct reactor_base *base, int fd,
+                            void *fn_parameter, int mask) {
+    UTIL_NOTUSED(base);
+    UTIL_NOTUSED(mask);
+    struct server *srv = (struct server *) fn_parameter;
 
-    return 0;
+    char buf[TCP_MSG_BUF_LEN] = {'\0'};
+    int buf_len = util_tcp_recv(fd, buf, TCP_MSG_BUF_LEN);
+    if (buf_len == 0) {
+        log_debug("handle_tcp_recv buf_len==0\n");
+        // close fd and client
+        ae_del_net_event(base, fd, AE_NET_EVENT_READ | AE_NET_EVENT_WRITE);
+        ses_del_client_by_fd(srv->ses, fd);
+        util_tcp_shutdown(fd, 2);
+    } else if (buf_len < 0) {
+        log_debug("handle_tcp_recv buf_len<0,%d\n", buf_len);
+        ae_del_net_event(base, fd, AE_NET_EVENT_READ | AE_NET_EVENT_WRITE);
+        ses_del_client_by_fd(srv->ses, fd);
+        util_tcp_shutdown(fd, 2);
+    } else {
+        log_debug("handle_tcp_recv:%d,%s\n", buf_len, buf);
+        if (ses_is_new_connection(srv->ses, fd, buf, buf_len)) {
+            log_debug("ses_new_connection,fd:%d\n", fd);
+            handle_new_connection(srv->ses, fd, buf, buf_len);
+        } else {
+            // exist client, parse msg by transport protocol
+            log_debug("exist client,fd:%d\n", fd);
+            handle_client_msg(srv, fd, buf, buf_len);
+        }
+    }
+}
+
+static void handle_admin_tcp_recv(struct reactor_base *base, int fd,
+                                  void *fn_parameter, int mask) {
+    UTIL_NOTUSED(base);
+    UTIL_NOTUSED(fn_parameter);
+    UTIL_NOTUSED(mask);
+
+    char buf[TCP_MSG_BUF_LEN] = {'\0'};
+    int buf_len = util_tcp_recv(fd, buf, TCP_MSG_BUF_LEN);
+    if (buf_len == 0) {
+        log_debug("handle_admin_tcp_recv buf_len==0\n");
+        // close fd and client
+        ae_del_net_event(base, fd, AE_NET_EVENT_READ | AE_NET_EVENT_WRITE);
+        util_tcp_shutdown(fd, 2);
+    } else if (buf_len < 0) {
+        log_debug("handle_admin_tcp_recv buf_len<0,%d\n", buf_len);
+        ae_del_net_event(base, fd, AE_NET_EVENT_READ | AE_NET_EVENT_WRITE);
+        util_tcp_shutdown(fd, 2);
+    } else {
+        log_debug("handle_admin_tcp_recv>>>:%d,%s\n", buf_len, buf);
+        hdl_admin_recv_data(fd, buf, buf_len);
+    }
+}
+
+void hdl_server_accpet(struct reactor_base *base, int fd, void *fn_parameter,
+                       int mask) {
+    UTIL_NOTUSED(base);
+    UTIL_NOTUSED(mask);
+
+    int connfd = util_tcp_accept(fd);
+    log_debug("hdl_server_accpet connfd:%d\n", connfd);
+    util_set_fd_nonblocking(connfd);
+    ae_add_net_event(base, connfd, AE_NET_EVENT_READ, handle_tcp_recv,
+                     fn_parameter, "handle_tcp_recv");
+}
+
+void hdl_admin_server_accpet(struct reactor_base *base, int fd, void *fn_parameter,
+                             int mask) {
+    UTIL_NOTUSED(base);
+    UTIL_NOTUSED(mask);
+
+    int connfd = util_tcp_accept(fd);
+    log_debug("hdl_admin_server_accpet connfd:%d\n", connfd);
+    util_set_fd_nonblocking(connfd);
+    ae_add_net_event(base, connfd, AE_NET_EVENT_READ, handle_admin_tcp_recv,
+                     fn_parameter, "handle_admin_tcp_recv");
 }

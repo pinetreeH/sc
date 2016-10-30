@@ -150,3 +150,11 @@ int util_init_socket(char *ip, int port) {
     }
     return listenfd;
 }
+
+int util_tcp_accept(int listen_fd) {
+    struct sockaddr_in clientaddr;
+    socklen_t clientaddr_len = sizeof(clientaddr);
+    int connfd = accept(listen_fd, (struct sockaddr *) &clientaddr,
+                        &clientaddr_len);
+    return connfd;
+}

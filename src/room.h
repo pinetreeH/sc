@@ -9,7 +9,7 @@ struct client;
 
 struct room;
 
-extern struct room *room_new(void);
+extern struct room *room_new(const char *name);
 
 extern int room_jion(struct room *r, struct client *c);
 
@@ -19,8 +19,6 @@ extern int room_del(void *room);
 
 extern int room_client_number(struct room *r);
 
-extern const char *room_get_name(struct room *r);
-
-extern int room_set_name(struct room *r, const char *name);
+extern const char *room_name(struct room *r);
 
 #endif

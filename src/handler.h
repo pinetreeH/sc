@@ -5,37 +5,31 @@
 #define SC_HANDLER_HDL_H
 
 struct handler_if;
-
 struct client;
 
-extern int hdl_recv_data(int fd, const char *data, int len);
-
-extern int hdl_recv_close(int fd);
-
-extern int hdl_recv_err(int fd);
-
-extern int hdl_register_handler(const char *nsp_name, struct handler_if *h);
-
 // send msg to the client that starts it.
-extern int hdl_emit(const char *nsp_name, struct client *c,
+extern int hdl_emit(struct client *c,
                     const char *event, int event_len,
                     const char *msg, int len);
 
-// send msg to all the clients which under the same nsp
-extern int hdl_broadcast(const char *nsp_name,
+// send msg to all the clients which under the same namespace
+extern int hdl_broadcast(struct session *s,
                          struct client **except_clients, int client_size,
                          const char *event, int event_len,
                          const char *msg, int len);
 
-// send msg to all the clients which under the specific nsp and room
+// send msg to all the clients which under the specific namespace and room
 extern int hdl_room_broadcast(const char *nsp_name, const char *room_name,
                               struct client **except_clients, int client_size,
                               const char *event, int event_len,
                               const char *msg, int len);
 
-
 extern int hdl_admin_recv_data(int fd, const char *data, int len);
 
-extern int hdl_init(void);
+extern void hdl_server_accpet(struct reactor_base *base, int fd,
+                              void *fn_parameter, int mask);
+
+extern void hdl_admin_server_accpet(struct reactor_base *base, int fd,
+                                    void *fd_parameter, int mask);
 
 #endif

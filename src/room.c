@@ -16,7 +16,7 @@ struct room {
     hashmap *clients;
 };
 
-struct room *room_new(void) {
+struct room *room_new(const char *name) {
     struct room *r = NULL;
     r = (struct room *) mem_malloc(sizeof(struct room));
     if (r) {
@@ -24,6 +24,7 @@ struct room *room_new(void) {
                                   pointer_cmp, NULL,
                                   NULL, NULL,
                                   pointer_hashindex);
+        strcpy(r->name, name);
     }
     return r;
 }
@@ -55,12 +56,6 @@ int room_client_number(struct room *r) {
     return r ? hashmap_size(r->clients) : -1;
 }
 
-const char *room_get_name(struct room *r) {
+const char *room_name(struct room *r) {
     return r ? r->name : NULL;
-}
-
-int room_set_name(struct room *r, const char *name) {
-    if (r)
-        strcpy(r->name, name);
-    return 0;
 }
