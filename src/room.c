@@ -16,6 +16,10 @@ struct room {
     hashmap *clients;
 };
 
+struct room_iterator {
+    hashmap_iterator it;
+};
+
 struct room *room_new(const char *name) {
     struct room *r = NULL;
     r = (struct room *) mem_malloc(sizeof(struct room));
@@ -58,4 +62,37 @@ int room_client_number(struct room *r) {
 
 const char *room_name(struct room *r) {
     return r ? r->name : NULL;
+}
+
+// wrapper for hashmap_iterator
+struct room_iterator *room_iterator_new(struct room *r) {
+    if (!r)
+        return NULL;
+    if (hashmap_size(r->clients) == 0)
+        return NULL;
+
+    struct room_iterator *room_it = NULL;
+    room_it = (struct room_iterator *)
+            mem_malloc(sizeof(struct room_iterator));
+    room_it->it = hashmap_get_iterator(r->clients);
+    return room_it;
+}
+
+int room_iterator_del(struct room_iterator *it) {
+    mem_free(it);
+    return 0;
+}
+
+int room_valid_iterator(struct room_iterator *it) {
+    return it ? hashmap_valid_iterator(it->it) : 0;
+}
+
+int room_next_client(struct room *r,
+                     struct room_iterator **it,
+                     struct client **c) {
+    if (!r || !it || !c)
+        return -1;
+
+    (*it)->it = hashmap_next((*it)->it, (void **) c, NULL);
+    return 0;
 }

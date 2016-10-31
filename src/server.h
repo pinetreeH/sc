@@ -7,13 +7,13 @@
 
 struct reactor_base;
 struct session;
-struct namespace;
+struct nsp;
 struct handler_if;
 
 struct server {
     struct reactor_base *ae;
     struct session *ses;
-    struct namespace *nsp;
+    struct nsp *nsp;
     int ping_interval;
     int ping_timeout;
     int port;

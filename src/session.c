@@ -18,6 +18,10 @@ struct session {
     heap *heartbeat;
 };
 
+struct session_iterator {
+    hashmap_iterator it;
+};
+
 struct session *ses_init(int capacity) {
     struct session *s = NULL;
     s = (struct session *) mem_malloc(sizeof(struct session));
@@ -112,4 +116,37 @@ int ses_handle_timeout_client(struct session *s,
 int ses_is_new_connection(struct session *s, int fd,
                           const char *data, int len) {
     return s->fd_to_clients[fd] ? 1 : 0;
+}
+
+// wrapper for hashmap_iterator
+struct session_iterator *ses_iterator_new(struct session *s) {
+    if (!s)
+        return NULL;
+    if (hashmap_size(s->sid_to_client) == 0)
+        return NULL;
+
+    struct session_iterator *ses_it = NULL;
+    ses_it = (struct session_iterator *)
+            mem_malloc(sizeof(struct session_iterator));
+    ses_it->it = hashmap_get_iterator(s->sid_to_client);
+    return ses_it;
+}
+
+int ses_iterator_del(struct session_iterator *it) {
+    mem_free(it);
+    return 0;
+}
+
+int ses_valid_iterator(struct session_iterator *it) {
+    return it ? hashmap_valid_iterator(it->it) : 0;
+}
+
+int ses_next_client(struct session *s,
+                    struct session_iterator **it,
+                    struct client **c) {
+    if (!s || !it || !c)
+        return -1;
+
+    (*it)->it = hashmap_next((*it)->it, NULL, (void **) c);
+    return 0;
 }

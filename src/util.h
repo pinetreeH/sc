@@ -6,6 +6,8 @@
 #define SC_UTIL_UTIL_H
 
 #define UTIL_NOTUSED(p) ((void) p)
+#define RETURN_OK   1
+#define RETURN_ERR  0
 
 extern void log_debug(const char *fmt, ...);
 
@@ -34,7 +36,7 @@ extern int util_tcp_shutdown(int fd, int how);
 
 extern void util_set_fd_nonblocking(int fd);
 
-extern int util_get_fd_ip_port(int fd,char *ip,int *port);
+extern int util_get_fd_ip_port(int fd, char *ip, int *port);
 
 extern int util_init_socket(char *ip, int port);
 

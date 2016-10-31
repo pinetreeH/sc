@@ -5,12 +5,12 @@
 #include "handler.h"
 #include "handler_if.h"
 #include "session.h"
+#include "room.h"
+#include "nsp.h"
 #include "transport.h"
 #include "reactor.h"
-#include "hashmap.h"
 #include "client.h"
 #include "util.h"
-#include "helper.h"
 #include "server.h"
 #include <string.h>
 #include <stdio.h>
@@ -178,44 +178,43 @@ int hdl_broadcast(struct session *s,
                   const char *event, int event_len,
                   const char *msg, int len) {
 
-    hashmap *rooms = NULL;
-    rooms = ses_get_rooms(nsp_name);
-    if (!rooms)
-        return 0;
-    if (hashmap_size(rooms) == 0)
-        return 0;
+    if (!s || !event || !event_len || !msg || !len)
+        return -1;
 
-    char *room_name = NULL;
-    hashmap *one_room = NULL;
-    hashmap_iterator it = hashmap_get_iterator(rooms);
-    while (hashmap_valid_iterator(it)) {
-        it = hashmap_next(it, (void **) &room_name, (void **) &one_room);
-        hdl_room_broadcast(nsp_name, room_name, except_clients, client_size,
-                           event, event_len, msg, len);
+    struct client *c = NULL;
+    struct session_iterator *ses_it = NULL;
+    ses_it = ses_iterator_new(s);
+    while (ses_valid_iterator(ses_it)) {
+        ses_next_client(s, &ses_it, &c);
+        if (c && !in_except_list(except_clients, client_size, c))
+            hdl_emit(c, event, event_len, msg, len);
     }
+    ses_iterator_del(ses_it);
 
     return 0;
 }
 
-int hdl_room_broadcast(const char *nsp_name, const char *room_name,
+int hdl_room_broadcast(struct nsp *n, const char *room_name,
                        struct client **except_clients, int client_size,
                        const char *event, int event_len,
                        const char *msg, int len) {
-    if (!nsp_name || !room_name || !event || !msg)
+    if (!n || !room_name || !event || !msg)
         return -1;
 
-    hashmap *room = NULL;
-    room = ses_get_room(nsp_name, room_name);
-    if (!room)
-        return 0;
+    struct room *r = NULL;
+    r = nsp_get_room(n, room_name);
+    if (!r)
+        return -1;
 
     struct client *c = NULL;
-    hashmap_iterator it = hashmap_get_iterator(room);
-    while (hashmap_valid_iterator(it)) {
-        it = hashmap_next(it, (void **) &c, NULL);
+    struct room_iterator *it = NULL;
+    it = room_iterator_new(r);
+    while (room_valid_iterator(it)) {
+        room_next_client(r, &it, &c);
         if (c && !in_except_list(except_clients, client_size, c))
-            hdl_emit(nsp_name, c, event, event_len, msg, len);
+            hdl_emit(c, event, event_len, msg, len);
     }
+    room_iterator_del(it);
 
     return 0;
 }

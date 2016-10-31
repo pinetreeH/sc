@@ -3,14 +3,13 @@
 #include "session.h"
 #include "transport.h"
 #include "handler.h"
-#include "namespace.h"
+#include "nsp.h"
 #include "handler_if.h"
 #include "util.h"
 #include "client.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
 
 // example function declare
 static void sc_on_connect(int fd, const char *data, int len);
@@ -27,9 +26,11 @@ static void sc_on_binary_event(int fd, const char *data, int len);
 
 static void sc_on_binary_ack(int fd, const char *data, int len);
 
+struct server srv;
+
 int main(int argc, char **args) {
     int capacity = 128;
-    struct server srv;
+
     srv.ae = ae_init(capacity);
     srv.nsp = nsp_new();
     srv.ses = ses_init(capacity);
@@ -68,7 +69,6 @@ int main(int argc, char **args) {
     msg_handler->on_binary_event = sc_on_binary_event;
     msg_handler->on_binary_ack = sc_on_binary_ack;
     srv.handler = msg_handler;
-    hdl_init(msg_handler);
 
     log_debug("current_timestamp:%d", util_get_timestamp());
     //ae_add_time_event(srv.ae, foobar, "2", "foobar", 1, 3);
@@ -91,14 +91,14 @@ void sc_on_disconnect(int fd, const char *data, int len) {
 
 void sc_on_event(int fd, const char *data, int len) {
     log_debug("socket.io event packet, fd:%d, data:%s\n", fd, data);
-    struct client *c = ses_get_client_by_fd(fd);
+    struct client *c = ses_get_client_by_fd(srv.ses, fd);
     char *event = "\"news\"";
     char client_msg[256] = {0};
-    sprintf(client_msg, "{\"hello\":\"your sid:%s\"}", c->sid);
+    sprintf(client_msg, "{\"hello\":\"your sid:%s\"}", client_sid(c));
     char bro_msg[256] = {0};
-    sprintf(bro_msg, "{\"hello_all\":\"welcome new client:%s\"}", c->sid);
-    hdl_emit(SES_DEFAULT_NSP, c, event, strlen(event), client_msg, strlen(client_msg));
-    hdl_broadcast(SES_DEFAULT_NSP, &c, 1, event, strlen(event), bro_msg, strlen(bro_msg));
+    sprintf(bro_msg, "{\"hello_all\":\"welcome new client:%s\"}", client_sid(c));
+    hdl_emit(c, event, strlen(event), client_msg, strlen(client_msg));
+    hdl_broadcast(srv.ses, &c, 1, event, strlen(event), bro_msg, strlen(bro_msg));
 }
 
 void sc_on_ack(int fd, const char *data, int len) {

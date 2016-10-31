@@ -7,7 +7,7 @@ set(SOURCE_FILES
         server.c reactor.c util.c
         hashmap.c transport.c
         handler.c heap.c helper.c
-        client.c room.c namespace.c
+        client.c room.c nsp.c
         session.c
         3rd/http_parser/http_parser.c
         3rd/c-websocket/cWebSockets.c
