@@ -122,7 +122,7 @@ int ses_handle_timeout_client(struct reactor_base *ae, void *data) {
 
 int ses_is_new_connection(struct session *s, int fd,
                           const char *data, int len) {
-    return s->fd_to_clients[fd] ? 1 : 0;
+    return !s->fd_to_clients[fd] ? 1 : 0;
 }
 
 // wrapper for hashmap_iterator
