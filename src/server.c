@@ -42,6 +42,8 @@ int main(int argc, char **args) {
         exit(EXIT_FAILURE);
 
     tra_conf_init(srv.ping_interval, srv.ping_timeout);
+    tra_http_parse_init();
+    tra_default_sio_packet_init();
 
     int sockfd = util_init_socket("localhost", srv.port);
     util_set_fd_nonblocking(sockfd);
@@ -54,10 +56,6 @@ int main(int argc, char **args) {
     ae_add_net_event(srv.ae, admin_sockfd, AE_NET_EVENT_READ,
                      hdl_admin_server_accpet, (void *) &srv,
                      "hdl_admin_server_accpet");
-
-    tra_http_parse_init();
-    tra_default_sio_packet_init();
-    ses_init(capacity);
 
     struct handler_if *msg_handler = NULL;
     msg_handler = (struct handler_if *) mem_malloc(sizeof(struct handler_if));
@@ -72,11 +70,14 @@ int main(int argc, char **args) {
 
     log_debug("current_timestamp:%d", util_get_timestamp());
     //ae_add_time_event(srv.ae, foobar, "2", "foobar", 1, 3);
-    ae_add_time_event(srv.ae, ses_handle_timeout_client, (void *) (srv.ping_timeout / 1000),
-                      "ses_handle_timeout_client", 1, AE_TIME_EVENT_REPEAT_INFINITE);
+    ae_add_time_event(srv.ae, ses_handle_timeout_client, (void *) &srv,
+                      "ses_handle_timeout_client", 1,
+                      AE_TIME_EVENT_REPEAT_INFINITE);
 
     ae_run(srv.ae, AE_NET_EVENT | AE_TIME_EVENT);
     ae_del(srv.ae);
+    nsp_del(srv.nsp);
+    ses_del(srv.ses);
 
     return EXIT_SUCCESS;
 }

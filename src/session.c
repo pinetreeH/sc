@@ -8,6 +8,7 @@
 #include "heap.h"
 #include "helper.h"
 #include "util.h"
+#include "server.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -36,6 +37,14 @@ struct session *ses_init(int capacity) {
         s->heartbeat = heap_init(capacity, minheap_key_cmp);
     }
     return s;
+}
+
+void ses_del(struct session *s) {
+    if (!s)
+        return;
+    mem_free(s->fd_to_clients);
+    hashmap_free(s->sid_to_client, 0, 0);
+    heap_del(s->heartbeat);
 }
 
 int ses_add_client(struct session *s, struct client *c) {
@@ -87,27 +96,25 @@ int ses_update_client_heartbeat(struct session *s,
     return 0;
 }
 
-int ses_handle_timeout_client(struct session *s,
-                              struct reactor_base *ae,
-                              void *heartbeat_timeout) {
+int ses_handle_timeout_client(struct reactor_base *ae, void *data) {
     UTIL_NOTUSED(ae);
-    if (!s)
+    struct server *srv = (struct server *) data;
+    if (!srv->ses)
         return 0;
-    if (!heap_size(s->heartbeat))
+    if (!heap_size(srv->ses->heartbeat))
         return 0;
 
     int current_timestamp = util_get_timestamp();
     int *k = NULL;
     struct client *c = NULL;
     do {
-        heap_get_root(s->heartbeat, (void **) &k, (void **) &c);
+        heap_get_root(srv->ses->heartbeat, (void **) &k, (void **) &c);
         if (!k || !c)
             break;
         int last_timestamp = (int) k;
-        int timeout = (int) heartbeat_timeout;
-        if (current_timestamp - last_timestamp < timeout)
+        if (current_timestamp - last_timestamp < srv->ping_timeout)
             break;
-        ses_del_client_by_fd(s, client_fd(c));
+        ses_del_client_by_fd(srv->ses, client_fd(c));
     } while (1);
 
     return 0;

@@ -12,6 +12,8 @@ struct session_iterator;
 
 extern struct session *ses_init(int capacity);
 
+extern void ses_del(struct session *s);
+
 extern int ses_add_client(struct session *s, struct client *c);
 
 extern int ses_del_client_by_fd(struct session *s, int fd);
@@ -25,9 +27,8 @@ extern int ses_update_client_heartbeat(struct session *s,
                                        struct client *c,
                                        int new_heartbeat);
 
-extern int ses_handle_timeout_client(struct session *s,
-                                     struct reactor_base *ae,
-                                     void *heartbeat_timeout);
+extern int ses_handle_timeout_client(struct reactor_base *ae,
+                                     void *data);
 
 extern int ses_is_new_connection(struct session *s, int fd,
                                  const char *data, int len);
