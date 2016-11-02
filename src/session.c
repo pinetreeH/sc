@@ -43,7 +43,7 @@ void ses_del(struct session *s) {
     if (!s)
         return;
     mem_free(s->fd_to_clients);
-    hashmap_free(s->sid_to_client, 0, 0);
+    hashmap_free(s->sid_to_client);
     heap_del(s->heartbeat);
 }
 
@@ -63,7 +63,7 @@ int ses_del_client_by_fd(struct session *s, int fd) {
     if (s && fd) {
         struct client *c = s->fd_to_clients[fd];
         s->fd_to_clients[fd] = NULL;
-        hashmap_delete(s->sid_to_client, (void *) client_sid(c), 0, 1);
+        hashmap_delete(s->sid_to_client, (void *) client_sid(c));
         minheap_element_del(s->heartbeat, client_get_hearbeat_ptr(c));
     }
     return 0;

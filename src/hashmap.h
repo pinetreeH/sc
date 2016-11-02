@@ -38,14 +38,13 @@ extern hashmap *hashmap_init(int capacity,
                              hashmap_free_value *free_value_fn,
                              hashmap_key_index *key_index_fn);
 
-extern int hashmap_free(hashmap *map, int free_key, int free_value);
+extern int hashmap_free(hashmap *map);
 
 extern int hashmap_set(hashmap *map, void *key, void *value);
 
 extern int hashmap_get(hashmap *map, void *key, void **value);
 
-extern int hashmap_delete(hashmap *map, void *key, int free_key,
-                          int free_value);
+extern int hashmap_delete(hashmap *map, void *key);
 
 extern int hashmap_size(hashmap *map);
 

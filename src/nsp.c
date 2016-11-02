@@ -48,13 +48,13 @@ int nsp_add_room(struct nsp *n, struct room *r) {
 
 int nsp_del_room(struct nsp *n, struct room *r) {
     if (n && r)
-        return hashmap_delete(n->rooms, (void *) room_name(r), 0, 1);
+        return hashmap_delete(n->rooms, (void *) room_name(r));
     return -1;
 }
 
 int nsp_del(struct nsp *n) {
     if (n)
-        hashmap_free(n->rooms, 0, 1);
+        hashmap_free(n->rooms);
     return 0;
 }
 

@@ -10,7 +10,6 @@
 #include <string.h>
 
 #define CLIENT_SID_MAX 48
-#define CLIENT_NSP_MAX 32
 #define CLIENT_BUF_MAX (1024*16)
 
 struct client {

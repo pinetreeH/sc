@@ -179,8 +179,7 @@ int hashmap_get(hashmap *map, void *key, void **value) {
     return get_value(map, key, value, NULL);
 }
 
-int hashmap_delete(hashmap *map, void *key,
-                   int free_key, int free_value) {
+int hashmap_delete(hashmap *map, void *key) {
     if (!map)
         return HASHMAP_ERR;
 
@@ -189,9 +188,9 @@ int hashmap_delete(hashmap *map, void *key,
     ret = get_value(map, key, NULL, &idx);
     if (ret == HASHMAP_OK) {
         hashmap_element *e = &map->elements[idx];
-        if (free_key && map->free_key_fn)
+        if (map->free_key_fn)
             map->free_key_fn(&e->key);
-        if (free_value && map->free_value_fn)
+        if (map->free_value_fn)
             map->free_value_fn(&e->value);
 
         e->key = NULL;
@@ -216,19 +215,19 @@ int hashmap_size(hashmap *map) {
     return 0;
 }
 
-int hashmap_free(hashmap *map, int free_key, int free_value) {
+int hashmap_free(hashmap *map) {
     if (!map)
         return HASHMAP_ERR;
 
-    if ((free_key || free_value) && map->size > 0) {
+    if (map->size > 0) {
         for (int i = 0; i < map->capacity; i++) {
             hashmap_element *e = &map->elements[i];
             if (!element_space_used(e))
                 continue;
 
-            if (free_key)
+            if (map->free_key_fn)
                 map->free_key_fn(&e->key);
-            if (free_value)
+            if (map->free_value_fn)
                 map->free_value_fn(&e->value);
         }
     }

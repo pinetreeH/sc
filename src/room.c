@@ -42,7 +42,7 @@ int room_jion(struct room *r, struct client *c) {
 
 int room_leave(struct room *r, struct client *c) {
     if (r && c) {
-        return hashmap_delete(r->clients, (void *) c, 0, 0);
+        return hashmap_delete(r->clients, (void *) c);
     }
     return -1;
 }
@@ -50,7 +50,7 @@ int room_leave(struct room *r, struct client *c) {
 int room_del(void *room) {
     struct room *r = (struct room *) room;
     if (r) {
-        hashmap_free(r->clients, 0, 0);
+        hashmap_free(r->clients);
         mem_free(r);
     }
     return 0;
