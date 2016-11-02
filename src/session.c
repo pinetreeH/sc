@@ -32,7 +32,7 @@ struct session *ses_init(int capacity) {
                 mem_calloc(capacity, sizeof(struct client *));
         s->sid_to_client = hashmap_init(HASHMAP_DEFAULT_CAPACITY,
                                         str_cmp, pointer_cmp,
-                                        NULL, client_del,
+                                        NULL, NULL,
                                         str_hashindex);
         s->heartbeat = heap_init(capacity, minheap_key_cmp);
     }
@@ -65,6 +65,7 @@ int ses_del_client_by_fd(struct session *s, int fd) {
         s->fd_to_clients[fd] = NULL;
         hashmap_delete(s->sid_to_client, (void *) client_sid(c));
         minheap_element_del(s->heartbeat, client_get_hearbeat_ptr(c));
+        client_del(c);
     }
     return 0;
 }
