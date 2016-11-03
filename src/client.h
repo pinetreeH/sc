@@ -21,6 +21,10 @@ extern int client_port(struct client *c);
 
 extern int client_fd(struct client *c);
 
+extern int client_set_room(struct client *c, const char *room_name);
+
+extern const char *client_room_name(struct client *c);
+
 extern int client_heartbeat(struct client *c);
 
 extern int client_set_hearbeat_ptr(struct client *c, void *ptr);

@@ -3,6 +3,7 @@
 //
 
 #include "client.h"
+#include "room.h"
 #include "heap.h"
 #include "util.h"
 #include <arpa/inet.h>
@@ -19,18 +20,18 @@ struct client {
     int fd;
     int heartbeat;
     void *heartbeat_ptr;
-    void *room_ptr; // only in one room one time
+    char room_name[ROOM_NAME_STR_MAX]; // only in one room one time
     char read_buf[CLIENT_BUF_MAX];
     char write_buf[CLIENT_BUF_MAX];
     int read_start_idx;
     int read_end_idx;
-    int write_stat_idx;
+    int write_start_idx;
     int write_end_idx;
 };
 
 struct client *client_new(int fd, const char *sid) {
     struct client *c = NULL;
-    c = (struct client *) mem_malloc(sizeof(struct client));
+    c = (struct client *) mem_calloc(1, sizeof(struct client));
     if (c) {
         c->fd = fd;
         strcpy(c->sid, sid);
@@ -66,6 +67,20 @@ int client_port(struct client *c) {
 
 int client_fd(struct client *c) {
     return c ? c->fd : -1;
+}
+
+const char *client_room_name(struct client *c) {
+    return c ? c->room_name : NULL;
+}
+
+int client_set_room(struct client *c, const char *room_name) {
+    if (!c)
+        return -1;
+    if (room_name)
+        strcpy(c->room_name, room_name);
+    else
+        memset(c->room_name, 0, ROOM_NAME_STR_MAX);
+    return 0;
 }
 
 int client_heartbeat(struct client *c) {

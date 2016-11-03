@@ -5,6 +5,8 @@
 #ifndef SC_ROOM_ROOM_H
 #define SC_ROOM_ROOM_H
 
+#define ROOM_NAME_STR_MAX 32
+
 struct client;
 struct room;
 struct room_iterator;

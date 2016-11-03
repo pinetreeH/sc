@@ -252,7 +252,10 @@ int hdl_jion_room(struct nsp *n, const char *room_name, struct client *c) {
         nsp_add_room(n, r);
     }
 
-    return room_jion(r, c);
+    room_jion(r, c);
+    client_set_room(c, room_name);
+
+    return 0;
 }
 
 int hdl_leave_room(struct nsp *n, const char *room_name, struct client *c) {
@@ -266,6 +269,8 @@ int hdl_leave_room(struct nsp *n, const char *room_name, struct client *c) {
     room_leave(r, c);
     if (room_client_number(r) == 0)
         nsp_del_room(n, r);
+
+    client_set_room(c, NULL);
 
     return 0;
 }

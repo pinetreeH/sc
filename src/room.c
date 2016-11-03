@@ -9,8 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ROOM_NAME_STR_MAX 128
-
 struct room {
     char name[ROOM_NAME_STR_MAX];
     hashmap *clients;
