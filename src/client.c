@@ -42,7 +42,7 @@ struct client *client_new(int fd, const char *sid) {
 }
 
 int client_del(void *c) {
-    mem_free((void *) c);
+    mem_free(c);
 }
 
 int client_set_heartbeat(struct client *c, int heartbeart) {
