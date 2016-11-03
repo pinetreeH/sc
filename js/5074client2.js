@@ -8,5 +8,9 @@ socket.on('connect', function () {
 });
 
 socket.on('news', function (data) {
-    console.log('clent recv server data:',data);
+    console.log('on [news] data:',data);
+});
+
+socket.on('yy_room', function (data) {
+    console.log('on [yy_room] data:',data);
 });
