@@ -127,20 +127,42 @@ static int handle_client_msg(struct server *srv, int fd, const char *data, int l
     return 0;
 }
 
-int hdl_admin_recv_data(int fd, const char *data, int len) {
+int hdl_admin_recv_data(struct server *srv, int fd, const char *data, int len) {
     log_debug("hdl_admin_recv_data,fd:%d,data:%s\n", fd, data);
-    char test_admin_msg[TMP_MSG_MAX] = {0};
+    char test_admin_msg[TMP_MSG_MAX] = {'\0'};
     if (len > 0) {
         int idx = 0;
         for (; idx < len && idx < TMP_MSG_MAX - 1 && data[idx] != '\r'; idx++) {
             test_admin_msg[idx] = data[idx];
         }
-        test_admin_msg[idx] = '\0';
-        char *event = "\"news\"";
+        // demo admin command : pub room_name msg
+        // get cmd
+        char cmd[TMP_MSG_MAX] = {'\0'};
+        int tmp_idx = 0;
+        for (; tmp_idx < idx && test_admin_msg[tmp_idx] != ' '; tmp_idx++) {
+            cmd[tmp_idx] = test_admin_msg[tmp_idx];
+        }
+        if (strcmp(cmd, "pub") != 0) {
+            log_debug("invalid demo command!\n");
+            return -1;
+        }
+
+        tmp_idx++;
+        char parameter[TMP_MSG_MAX] = {'\0'};
+        for (int i = 0; tmp_idx < idx && test_admin_msg[tmp_idx] != ' '; tmp_idx++, i++) {
+            parameter[i] = test_admin_msg[tmp_idx];
+        }
+        tmp_idx++;
+        char msg[TMP_MSG_MAX] = {'\0'};
+        for (int i = 0; tmp_idx < idx; tmp_idx++, i++) {
+            msg[i] = test_admin_msg[tmp_idx];
+        }
+
+        const char *event = "\"news\"";
         char bro_msg[TMP_MSG_MAX * 2] = {0};
-        sprintf(bro_msg, "{\"admin\":\"msg:%s\"}", test_admin_msg);
+        sprintf(bro_msg, "{\"admin\":\"msg:%s\"}", msg);
         log_debug("admin_msg:%s\n", bro_msg);
-        //hdl_broadcast(NULL, 0, event, strlen(event), bro_msg, strlen(bro_msg));
+        hdl_room_broadcast(srv->nsp, parameter, NULL, 0, event, strlen(event), bro_msg, strlen(bro_msg));
     }
 }
 
@@ -238,8 +260,13 @@ int hdl_leave_room(struct nsp *n, const char *room_name, struct client *c) {
         return -1;
     struct room *r = NULL;
     r = nsp_get_room(n, room_name);
-    if (r)
-        return room_leave(r, c);
+    if (!r)
+        return 0;
+
+    room_leave(r, c);
+    if (room_client_number(r) == 0)
+        nsp_del_room(n, r);
+
     return 0;
 }
 
@@ -278,8 +305,8 @@ static void handle_tcp_recv(struct reactor_base *base, int fd,
 static void handle_admin_tcp_recv(struct reactor_base *base, int fd,
                                   void *fn_parameter, int mask) {
     UTIL_NOTUSED(base);
-    UTIL_NOTUSED(fn_parameter);
     UTIL_NOTUSED(mask);
+    struct server *srv = (struct server *) fn_parameter;
 
     char buf[TCP_MSG_BUF_LEN] = {'\0'};
     int buf_len = util_tcp_recv(fd, buf, TCP_MSG_BUF_LEN);
@@ -294,7 +321,7 @@ static void handle_admin_tcp_recv(struct reactor_base *base, int fd,
         util_tcp_shutdown(fd, 2);
     } else {
         log_debug("handle_admin_tcp_recv>>>:%d,%s\n", buf_len, buf);
-        hdl_admin_recv_data(fd, buf, buf_len);
+        hdl_admin_recv_data(srv, fd, buf, buf_len);
     }
 }
 

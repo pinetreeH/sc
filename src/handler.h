@@ -9,6 +9,7 @@ struct client;
 struct reactor_base;
 struct session;
 struct nsp;
+struct server;
 
 // send msg to the client that starts it.
 extern int hdl_emit(struct client *c,
@@ -32,7 +33,7 @@ extern int hdl_jion_room(struct nsp *n, const char *room_name, struct client *c)
 
 extern int hdl_leave_room(struct nsp *n, const char *room_name, struct client *c);
 
-extern int hdl_admin_recv_data(int fd, const char *data, int len);
+extern int hdl_admin_recv_data(struct server *srv, int fd, const char *data, int len);
 
 extern void hdl_server_accpet(struct reactor_base *base, int fd,
                               void *fn_parameter, int mask);

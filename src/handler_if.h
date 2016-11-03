@@ -5,6 +5,8 @@
 #ifndef SC_HANDLER_HDLIF_H
 #define SC_HANDLER_HDLIF_H
 
+struct server;
+
 struct handler_if {
     void (*on_connect)(struct server *srv, int fd, const char *data, int len);
 
