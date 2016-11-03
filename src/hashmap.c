@@ -35,15 +35,7 @@ static inline int need_rehash(hashmap *map) {
 }
 
 static inline int element_space_used(hashmap_element *e) {
-    return e->value != NULL;
-}
-
-static int get_hash_index(hashmap *map, void *key) {
-    int idx = -1;
-    if (map && map->key_index_fn)
-        idx = map->key_index_fn(map->capacity, key);
-
-    return idx;
+    return e->key || e->value;
 }
 
 static int rehash(hashmap *map) {
@@ -77,7 +69,7 @@ static int rehash(hashmap *map) {
 
 static int find_empty_space(hashmap *map, void *key, void *value,
                             int *final_idx) {
-    int idx = get_hash_index(map, key);
+    int idx = map->key_index_fn(map->capacity, key);
     for (int i = 0; i < MAX_CHAIN_LENGTH; i++) {
         hashmap_element *e = &map->elements[idx + i];
         if (!element_space_used(e)) {
@@ -85,7 +77,7 @@ static int find_empty_space(hashmap *map, void *key, void *value,
             return HASHMAP_OK;
         }
 
-        if (map->key_cmp_fn(&key, &e->key) == 0)
+        if (map->key_cmp_fn(key, e->key) == 0)
             return HASHMAP_ELEMENT_FOUND;
     }
     return HASHMAP_ELEMENT_FULL;
@@ -97,13 +89,13 @@ static int get_value(hashmap *map, void *key, void **value,
         return HASHMAP_ERR;
 
     int idx = -1;
-    idx = get_hash_index(map, key);
+    idx = map->key_index_fn(map->capacity, key);
     for (int i = 0; i < MAX_CHAIN_LENGTH; i++) {
         hashmap_element *e = &map->elements[idx + i];
         if (!element_space_used(e)) {
             continue;
         }
-        if (map->key_cmp_fn(&key, e) == 0) {
+        if (map->key_cmp_fn(key, e->key) == 0) {
             if (value)
                 *value = e->value;
             if (element_idx)

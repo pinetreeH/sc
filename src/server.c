@@ -12,25 +12,24 @@
 #include <stdio.h>
 
 // example function declare
-static void sc_on_connect(int fd, const char *data, int len);
+static void sc_on_connect(struct server *srv, int fd, const char *data, int len);
 
-static void sc_on_disconnect(int fd, const char *data, int len);
+static void sc_on_disconnect(struct server *srv, int fd, const char *data, int len);
 
-static void sc_on_event(int fd, const char *data, int len);
+static void sc_on_event(struct server *srv, int fd, const char *data, int len);
 
-static void sc_on_ack(int fd, const char *data, int len);
+static void sc_on_ack(struct server *srv, int fd, const char *data, int len);
 
-static void sc_on_error(int fd, const char *data, int len);
+static void sc_on_error(struct server *srv, int fd, const char *data, int len);
 
-static void sc_on_binary_event(int fd, const char *data, int len);
+static void sc_on_binary_event(struct server *srv, int fd, const char *data, int len);
 
-static void sc_on_binary_ack(int fd, const char *data, int len);
-
-struct server srv;
+static void sc_on_binary_ack(struct server *srv, int fd, const char *data, int len);
 
 int main(int argc, char **args) {
     int capacity = 128;
 
+    struct server srv;
     srv.ae = ae_init(capacity);
     srv.nsp = nsp_new();
     srv.ses = ses_init(capacity);
@@ -82,39 +81,47 @@ int main(int argc, char **args) {
     return EXIT_SUCCESS;
 }
 
-void sc_on_connect(int fd, const char *data, int len) {
+void sc_on_connect(struct server *srv, int fd, const char *data, int len) {
     log_debug("socket.io connect packet, fd:%d, data:%s", fd, data);
 }
 
-void sc_on_disconnect(int fd, const char *data, int len) {
+void sc_on_disconnect(struct server *srv, int fd, const char *data, int len) {
     log_debug("socket.io disconnect packet, fd:%d, data:%s\n", fd, data);
 }
 
-void sc_on_event(int fd, const char *data, int len) {
+void sc_on_event(struct server *srv, int fd, const char *data, int len) {
     log_debug("socket.io event packet, fd:%d, data:%s\n", fd, data);
-    struct client *c = ses_get_client_by_fd(srv.ses, fd);
+    struct client *c = ses_get_client_by_fd(srv->ses, fd);
     const char *event = "\"news\"";
     char client_msg[256] = {0};
     sprintf(client_msg, "{\"hello\":\"your sid:%s\"}", client_sid(c));
     char bro_msg[256] = {0};
     sprintf(bro_msg, "{\"hello_all\":\"welcome new client:%s\"}", client_sid(c));
     hdl_emit(c, event, strlen(event), client_msg, strlen(client_msg));
-    hdl_broadcast(srv.ses, &c, 1, event, strlen(event), bro_msg, strlen(bro_msg));
+    hdl_broadcast(srv->ses, &c, 1, event, strlen(event), bro_msg, strlen(bro_msg));
+
+    const char *room_name = "yy";
+    hdl_jion_room(srv->nsp, room_name, c);
+    const char *room_event = "\"yy_room\"";
+    char room_msg[256] = {0};
+    sprintf(room_msg, "{\"yy_room\":\"welcome to yy room:%s\"}", client_sid(c));
+    hdl_room_broadcast(srv->nsp, room_name, NULL, 0, room_event, strlen(room_event),
+                       room_msg, strlen(room_msg));
 }
 
-void sc_on_ack(int fd, const char *data, int len) {
+void sc_on_ack(struct server *srv, int fd, const char *data, int len) {
     log_debug("socket.io ack packet, fd:%d, data:%s\n", fd, data);
 }
 
-void sc_on_error(int fd, const char *data, int len) {
+void sc_on_error(struct server *srv, int fd, const char *data, int len) {
     log_debug("socket.io error packet, fd:%d, data:%s\n", fd, data);
 }
 
-void sc_on_binary_event(int fd, const char *data, int len) {
+void sc_on_binary_event(struct server *srv, int fd, const char *data, int len) {
     log_debug("socket.io binary event packet, fd:%d, data:%s\n", fd, data);
 }
 
-void sc_on_binary_ack(int fd, const char *data, int len) {
+void sc_on_binary_ack(struct server *srv, int fd, const char *data, int len) {
     log_debug("socket.io binary ack packet, fd:%d, data:%s\n", fd, data);
 }
 

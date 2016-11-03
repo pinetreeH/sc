@@ -22,11 +22,15 @@ extern int hdl_broadcast(struct session *s,
                          const char *msg, int len);
 
 // send msg to all the clients which under the specific nsp and room
-extern int hdl_room_broadcast(struct nsp *nsp,
+extern int hdl_room_broadcast(struct nsp *n,
                               const char *room_name,
                               struct client **except_clients, int client_size,
                               const char *event, int event_len,
                               const char *msg, int len);
+
+extern int hdl_jion_room(struct nsp *n, const char *room_name, struct client *c);
+
+extern int hdl_leave_room(struct nsp *n, const char *room_name, struct client *c);
 
 extern int hdl_admin_recv_data(int fd, const char *data, int len);
 

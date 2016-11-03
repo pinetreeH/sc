@@ -62,32 +62,33 @@ static int handle_eio_ping_packet(struct session *s, int fd) {
                             tra_get_sio_pong_packet_len());
 }
 
-static int handle_sio_msg_packet(struct handler_if *handler, int fd,
+static int handle_sio_msg_packet(struct server *srv,
+                                 struct handler_if *handler, int fd,
                                  const char *data, int len) {
     log_debug("EIO_PACKET_MESSAGE content,%s\n", data);
     tra_sio_packet_type sio_type = tra_sio_decode(data, len);
 
     switch (sio_type) {
         case TRA_SIO_PACKET_CONNECT:
-            handler->on_connect(fd, data + 1, len - 1);
+            handler->on_connect(srv, fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_DISCONNECT:
-            handler->on_disconnect(fd, data + 1, len - 1);
+            handler->on_disconnect(srv, fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_EVENT:
-            handler->on_event(fd, data + 1, len - 1);
+            handler->on_event(srv, fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_ACK:
-            handler->on_ack(fd, data + 1, len - 1);
+            handler->on_ack(srv, fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_ERROR:
-            handler->on_error(fd, data + 1, len - 1);
+            handler->on_error(srv, fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_BINARY_EVENT:
-            handler->on_binary_event(fd, data + 1, len - 1);
+            handler->on_binary_event(srv, fd, data + 1, len - 1);
             break;
         case TRA_SIO_PACKET_BINARY_ACK:
-            handler->on_binary_ack(fd, data + 1, len - 1);
+            handler->on_binary_ack(srv, fd, data + 1, len - 1);
             break;
         default:
             break;
@@ -112,7 +113,7 @@ static int handle_client_msg(struct server *srv, int fd, const char *data, int l
             // this case will not happen
             break;
         case TRA_EIO_PACKET_MESSAGE:
-            handle_sio_msg_packet(srv->handler, fd, msg + 1, msg_len - 1);
+            handle_sio_msg_packet(srv, srv->handler, fd, msg + 1, msg_len - 1);
             break;
         case TRA_EIO_PACKET_UPGRADE:
             // this case will not happen
@@ -168,7 +169,7 @@ int hdl_emit(struct client *c,
                                 event, event_len, msg, len,
                                 encode_data, TRA_WS_RESP_MAX);
 
-    log_debug("hdl_emit data len:%d\n", encode_len);
+    log_debug("hdl_emit data len:%d, event:%s\n", encode_len, event);
     client_send_data(c, encode_data, encode_len);
     return 0;
 }
@@ -216,6 +217,29 @@ int hdl_room_broadcast(struct nsp *n, const char *room_name,
     }
     room_iterator_del(it);
 
+    return 0;
+}
+
+int hdl_jion_room(struct nsp *n, const char *room_name, struct client *c) {
+    if (!n || !room_name || !c)
+        return -1;
+    struct room *r = NULL;
+    r = nsp_get_room(n, room_name);
+    if (!r) {
+        r = room_new(room_name);
+        nsp_add_room(n, r);
+    }
+
+    return room_jion(r, c);
+}
+
+int hdl_leave_room(struct nsp *n, const char *room_name, struct client *c) {
+    if (!n || !room_name || !c)
+        return -1;
+    struct room *r = NULL;
+    r = nsp_get_room(n, room_name);
+    if (r)
+        return room_leave(r, c);
     return 0;
 }
 
