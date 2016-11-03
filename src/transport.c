@@ -182,10 +182,13 @@ int tra_sio_encode(tra_sio_packet_type sio_type,
     int idx = 0;
     char sio_data[TRA_WS_RESP_MAX] = {0};
     sio_data[idx++] = get_sio_type(sio_type);//'2'
+    // namespace field
     for (int t = 0; t < nsp_len; t++) {
         sio_data[idx++] = nsp[t];
     }
-    sio_data[idx++] = ',';
+    if (nsp_len)
+        sio_data[idx++] = ',';
+    // msg field
     sio_data[idx++] = '[';
     for (int t = 0; t < event_len; t++) {
         sio_data[idx++] = event[t];

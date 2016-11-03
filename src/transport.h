@@ -7,7 +7,7 @@
 
 #define TRA_SID_STR_MAX 48
 #define TRA_STR_MAX 32
-#define TRA_WS_RESP_MAX 1024
+#define TRA_WS_RESP_MAX (1024*4)
 
 typedef enum _tra_eio_packet_type {
     TRA_EIO_PACKET_SCERR = -1,

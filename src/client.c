@@ -83,6 +83,8 @@ void *client_get_hearbeat_ptr(struct client *c) {
 }
 
 int client_send_data(struct client *c, const char *data, int len) {
-    util_tcp_send(c->fd, data, len);
+    int send_size = 0;
+    send_size = util_tcp_send(c->fd, data, len);
+    // TODO
     return 0;
 }

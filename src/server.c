@@ -93,7 +93,7 @@ void sc_on_disconnect(int fd, const char *data, int len) {
 void sc_on_event(int fd, const char *data, int len) {
     log_debug("socket.io event packet, fd:%d, data:%s\n", fd, data);
     struct client *c = ses_get_client_by_fd(srv.ses, fd);
-    char *event = "\"news\"";
+    const char *event = "\"news\"";
     char client_msg[256] = {0};
     sprintf(client_msg, "{\"hello\":\"your sid:%s\"}", client_sid(c));
     char bro_msg[256] = {0};
