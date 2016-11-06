@@ -6,9 +6,9 @@
 #include "util.h"
 #include "3rd/http_parser/http_parser.h"
 #include "3rd/c-websocket/cWebSockets.h"
-#include "3rd/cJson/cJSON.h"
 #include <string.h>
 //#include <regex.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #define URL_MAX_LEN  256
@@ -97,14 +97,10 @@ void tra_ws_resp(const char *req, char *resp, int resp_len) {
 }
 
 int tra_get_conf(const char *sid, char *msg) {
-    cJSON *root = cJSON_CreateObject();
-    cJSON *upgrades_body = cJSON_CreateArray();
-    cJSON_AddStringToObject(root, "sid", sid);
-    cJSON_AddNumberToObject(root, "pingInterval", ping_interval);
-    cJSON_AddNumberToObject(root, "pingTimeout", ping_timeout);
-    cJSON_AddItemToObject(root, "upgrades", upgrades_body);
-    strcpy(msg, cJSON_PrintUnformatted(root));
-    cJSON_Delete(root);
+    // {"sid":"xxxxx","upgrades":[],"pingInterval":25000,"pingTimeout":60000}
+    sprintf(msg, "{\"sid\":\"%s\",\"upgrades\":[],"
+                    "\"pingInterval\":%d,\"pingTimeout\":%d}",
+            sid, ping_interval, ping_timeout);
 }
 
 void tra_conf_init(int interval, int timeout) {

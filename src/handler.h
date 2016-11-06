@@ -12,18 +12,18 @@ struct nsp;
 struct server;
 
 // send msg to the client that starts it.
-extern int hdl_emit(struct client *c,
+extern int hdl_emit(struct client *c, struct reactor_base *ae,
                     const char *event, int event_len,
                     const char *msg, int len);
 
 // send msg to all the clients which under the same nsp
-extern int hdl_broadcast(struct session *s,
+extern int hdl_broadcast(struct session *s, struct reactor_base *ae,
                          struct client **except_clients, int client_size,
                          const char *event, int event_len,
                          const char *msg, int len);
 
 // send msg to all the clients which under the specific nsp and room
-extern int hdl_room_broadcast(struct nsp *n,
+extern int hdl_room_broadcast(struct nsp *n, struct reactor_base *ae,
                               const char *room_name,
                               struct client **except_clients, int client_size,
                               const char *event, int event_len,

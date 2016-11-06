@@ -18,8 +18,9 @@
 #define TMP_MSG_MAX 256
 #define TCP_MSG_BUF_LEN (1024*16)
 
-static int handle_new_connection(struct session *s, int fd,
-                                 const char *data, int len) {
+static int handle_new_connection(struct session *s,
+                                 struct reactor_base *ae,
+                                 int fd, const char *data, int len) {
     // this is a new client, parse http request
     struct http_request_info info;
     tra_parse_http_req(data, len, &info);
@@ -47,19 +48,20 @@ static int handle_new_connection(struct session *s, int fd,
         ses_add_client(s, c);
         // send CONNECT packet
         client_send_data(c, tra_get_sio_connect_packet(),
-                         tra_get_sio_connect_packet_len());
+                         tra_get_sio_connect_packet_len(), ae);
     }
     return 0;
 }
 
-static int handle_eio_ping_packet(struct session *s, int fd) {
+static int handle_eio_ping_packet(struct session *s,
+                                  struct reactor_base *ae, int fd) {
     // update client heartbeat
     struct client *c = NULL;
     c = ses_get_client_by_fd(s, fd);
     ses_update_client_heartbeat(s, c, util_get_timestamp());
     // send PONG packet
     return client_send_data(c, tra_get_sio_pong_packet(),
-                            tra_get_sio_pong_packet_len());
+                            tra_get_sio_pong_packet_len(), ae);
 }
 
 static int handle_sio_msg_packet(struct server *srv,
@@ -107,7 +109,7 @@ static int handle_client_msg(struct server *srv, int fd, const char *data, int l
         case TRA_EIO_PACKET_CLOSE:
             break;
         case TRA_EIO_PACKET_PING:
-            handle_eio_ping_packet(srv->ses, fd);
+            handle_eio_ping_packet(srv->ses, srv->ae, fd);
             break;
         case TRA_EIO_PACKET_PONG:
             // this case will not happen
@@ -149,7 +151,8 @@ int hdl_admin_recv_data(struct server *srv, int fd, const char *data, int len) {
 
         tmp_idx++;
         char parameter[TMP_MSG_MAX] = {'\0'};
-        for (int i = 0; tmp_idx < idx && test_admin_msg[tmp_idx] != ' '; tmp_idx++, i++) {
+        for (int i = 0; tmp_idx < idx && test_admin_msg[tmp_idx] != ' ';
+             tmp_idx++, i++) {
             parameter[i] = test_admin_msg[tmp_idx];
         }
         tmp_idx++;
@@ -162,7 +165,8 @@ int hdl_admin_recv_data(struct server *srv, int fd, const char *data, int len) {
         char bro_msg[TMP_MSG_MAX * 2] = {0};
         sprintf(bro_msg, "{\"admin\":\"msg:%s\"}", msg);
         log_debug("admin_msg:%s\n", bro_msg);
-        hdl_room_broadcast(srv->nsp, parameter, NULL, 0, event, strlen(event), bro_msg, strlen(bro_msg));
+        hdl_room_broadcast(srv->nsp, srv->ae, parameter, NULL, 0,
+                           event, strlen(event), bro_msg, strlen(bro_msg));
     }
 }
 
@@ -179,7 +183,7 @@ static int in_except_list(struct client **except_clients,
     return 0;
 }
 
-int hdl_emit(struct client *c,
+int hdl_emit(struct client *c, struct reactor_base *ae,
              const char *event, int event_len,
              const char *msg, int len) {
     if (!c || !event || !msg || len <= 0)
@@ -192,11 +196,11 @@ int hdl_emit(struct client *c,
                                 encode_data, TRA_WS_RESP_MAX);
 
     log_debug("hdl_emit data len:%d, event:%s\n", encode_len, event);
-    client_send_data(c, encode_data, encode_len);
+    client_send_data(c, encode_data, encode_len, ae);
     return 0;
 }
 
-int hdl_broadcast(struct session *s,
+int hdl_broadcast(struct session *s, struct reactor_base *ae,
                   struct client **except_clients, int client_size,
                   const char *event, int event_len,
                   const char *msg, int len) {
@@ -210,14 +214,15 @@ int hdl_broadcast(struct session *s,
     while (ses_valid_iterator(ses_it)) {
         ses_next_client(s, &ses_it, &c);
         if (c && !in_except_list(except_clients, client_size, c))
-            hdl_emit(c, event, event_len, msg, len);
+            hdl_emit(c, ae, event, event_len, msg, len);
     }
     ses_iterator_del(ses_it);
 
     return 0;
 }
 
-int hdl_room_broadcast(struct nsp *n, const char *room_name,
+int hdl_room_broadcast(struct nsp *n, struct reactor_base *ae,
+                       const char *room_name,
                        struct client **except_clients, int client_size,
                        const char *event, int event_len,
                        const char *msg, int len) {
@@ -235,7 +240,7 @@ int hdl_room_broadcast(struct nsp *n, const char *room_name,
     while (room_valid_iterator(it)) {
         room_next_client(r, &it, &c);
         if (c && !in_except_list(except_clients, client_size, c))
-            hdl_emit(c, event, event_len, msg, len);
+            hdl_emit(c, ae, event, event_len, msg, len);
     }
     room_iterator_del(it);
 
@@ -298,7 +303,7 @@ static void handle_tcp_recv(struct reactor_base *base, int fd,
         log_debug("handle_tcp_recv:%d,%s\n", buf_len, buf);
         if (ses_is_new_connection(srv->ses, fd, buf, buf_len)) {
             log_debug("ses_new_connection,fd:%d\n", fd);
-            handle_new_connection(srv->ses, fd, buf, buf_len);
+            handle_new_connection(srv->ses, srv->ae, fd, buf, buf_len);
         } else {
             // exist client, parse msg by transport protocol
             log_debug("exist client,fd:%d\n", fd);

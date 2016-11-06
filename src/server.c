@@ -97,15 +97,15 @@ void sc_on_event(struct server *srv, int fd, const char *data, int len) {
     sprintf(client_msg, "{\"hello\":\"your sid:%s\"}", client_sid(c));
     char bro_msg[256] = {0};
     sprintf(bro_msg, "{\"hello_all\":\"welcome new client:%s\"}", client_sid(c));
-    hdl_emit(c, event, strlen(event), client_msg, strlen(client_msg));
-    hdl_broadcast(srv->ses, &c, 1, event, strlen(event), bro_msg, strlen(bro_msg));
+    hdl_emit(c, srv->ae, event, strlen(event), client_msg, strlen(client_msg));
+    hdl_broadcast(srv->ses, srv->ae, &c, 1, event, strlen(event), bro_msg, strlen(bro_msg));
 
     const char *room_name = "yy";
     hdl_jion_room(srv->nsp, room_name, c);
     const char *room_event = "\"yy_room\"";
     char room_msg[256] = {0};
     sprintf(room_msg, "{\"yy_room\":\"welcome to yy room:%s\"}", client_sid(c));
-    hdl_room_broadcast(srv->nsp, room_name, NULL, 0, room_event, strlen(room_event),
+    hdl_room_broadcast(srv->nsp, srv->ae, room_name, NULL, 0, room_event, strlen(room_event),
                        room_msg, strlen(room_msg));
 }
 

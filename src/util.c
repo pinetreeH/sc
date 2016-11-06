@@ -94,6 +94,7 @@ void *mem_calloc(int num, int size) {
     return calloc(num, size);
 }
 
+// return length of send bytes
 int util_tcp_send(int fd, const char *data, int len) {
     return send(fd, data, len, 0);
 }
