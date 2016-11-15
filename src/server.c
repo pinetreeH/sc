@@ -26,6 +26,11 @@ static void sc_on_binary_event(struct server *srv, int fd, const char *data, int
 
 static void sc_on_binary_ack(struct server *srv, int fd, const char *data, int len);
 
+static void sc_login(struct server *srv, int fd, const char *data, int len);
+
+static void sc_msg(struct server *srv, int fd, const char *data, int len);
+
+
 int main(int argc, char **args) {
     int capacity = 128;
 
@@ -33,8 +38,8 @@ int main(int argc, char **args) {
     srv.ae = ae_init(capacity);
     srv.nsp = nsp_new();
     srv.ses = ses_init(capacity);
-    srv.ping_interval = 3000;
-    srv.ping_timeout = 5000;
+    srv.ping_interval = 30000;
+    srv.ping_timeout = 50000;
     srv.port = 5074;
     srv.admin_port = 9527;
     if (!srv.ae || !srv.nsp || !srv.ses)
@@ -90,21 +95,63 @@ void sc_on_disconnect(struct server *srv, int fd, const char *data, int len) {
 }
 
 void sc_on_event(struct server *srv, int fd, const char *data, int len) {
-    log_debug("socket.io event packet, fd:%d, data:%s\n", fd, data);
+    log_debug("******* socket.io event packet, fd:%d, data:%s\n", fd, data);
+    // if login event
+    char *s = NULL;
+    s = strstr(data, "login");
+    if (s) {
+        sc_login(srv, fd, data, len);
+        return;
+    }
+
+    s = strstr(data, "cmsg");
+    if (s) {
+        sc_msg(srv,fd,data,len);
+        return;
+    }
+
+}
+
+void sc_msg(struct server *srv, int fd, const char *data, int len){
+    log_debug("******* socket.io event packet,msg, fd:%d, data:%s,len:%d\n", fd, data,len);
+    char msg[512] = {'\0'};
+    char *s = strstr(data,",");
+    s+=2;
+    int msg_size = 0;
+    while( s && *s != '\"'){
+        msg[msg_size++] = *s;
+        s++;
+    }
+    log_debug("******* socket.io event packet,cmsg, data:%s,len:%d\n", msg,msg_size);
+
     struct client *c = ses_get_client_by_fd(srv->ses, fd);
-    const char *event = "\"news\"";
+    const char *room_name = "yy";
+    hdl_jion_room(srv->nsp, room_name, c);
+    const char *room_event = "\"bro\"";
+    char room_msg[512] = {0};
+    sprintf(room_msg, "{\"bro\":\"client(%s) Say:%s\"}", client_sid(c), msg);
+    hdl_room_broadcast(srv->nsp, srv->ae, room_name, &c, 1, room_event, strlen(room_event),
+                       room_msg, strlen(room_msg));
+
+}
+
+void sc_login(struct server *srv, int fd, const char *data, int len) {
+    UTIL_NOTUSED(len);
+    log_debug("******* socket.io event packet,login, fd:%d, data:%s\n", fd, data);
+    struct client *c = ses_get_client_by_fd(srv->ses, fd);
+    const char *event = "\"msg\"";
     char client_msg[256] = {0};
-    sprintf(client_msg, "{\"hello\":\"your sid:%s\"}", client_sid(c));
+    sprintf(client_msg, "{\"msg\":\"your sid:%s\"}", client_sid(c));
     char bro_msg[256] = {0};
-    sprintf(bro_msg, "{\"hello_all\":\"welcome new client:%s\"}", client_sid(c));
+    sprintf(bro_msg, "{\"msg\":\"welcome new client:%s\"}", client_sid(c));
     hdl_emit(c, srv->ae, event, strlen(event), client_msg, strlen(client_msg));
     hdl_broadcast(srv->ses, srv->ae, &c, 1, event, strlen(event), bro_msg, strlen(bro_msg));
 
     const char *room_name = "yy";
     hdl_jion_room(srv->nsp, room_name, c);
-    const char *room_event = "\"yy_room\"";
+    const char *room_event = "\"bro\"";
     char room_msg[256] = {0};
-    sprintf(room_msg, "{\"yy_room\":\"welcome to yy room:%s\"}", client_sid(c));
+    sprintf(room_msg, "{\"bro\":\"welcome to yy room:%s\"}", client_sid(c));
     hdl_room_broadcast(srv->nsp, srv->ae, room_name, NULL, 0, room_event, strlen(room_event),
                        room_msg, strlen(room_msg));
 }
