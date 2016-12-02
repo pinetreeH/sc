@@ -161,9 +161,9 @@ int hdl_admin_recv_data(struct server *srv, int fd, const char *data, int len) {
             msg[i] = test_admin_msg[tmp_idx];
         }
 
-        const char *event = "\"news\"";
+        const char *event = "\"bro\"";
         char bro_msg[TMP_MSG_MAX * 2] = {0};
-        sprintf(bro_msg, "{\"admin\":\"msg:%s\"}", msg);
+        sprintf(bro_msg, "{\"bro\":\"msg:%s\"}", msg);
         log_debug("admin_msg:%s\n", bro_msg);
         hdl_room_broadcast(srv->nsp, srv->ae, parameter, NULL, 0,
                            event, strlen(event), bro_msg, strlen(bro_msg));
