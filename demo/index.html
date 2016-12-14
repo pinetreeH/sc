@@ -1,29 +1,49 @@
 <!doctype html>
 <html>
-  <head>
-    <title>Socket.IO chat</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
-      #messages li:nth-child(odd) { background: #eee; }
-    </style>
-  </head>
-  <body>
+
+<head>
+	<title>Socket.IO chat</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+		
+		body {
+			font: 13px Helvetica, Arial;
+		}
+		
+		#messages {
+			list-style-type: none;
+			margin: 0;
+			padding: 0;
+		}
+		
+		#messages li {
+			padding: 5px 10px;
+		}
+		
+		#messages li:nth-child(odd) {
+			background: #eee;
+		}
+	</style>
+</head>
+
+<body>
 	<p>messages:</p>
 	</br>
 	</br>
-    <ul id="messages"></ul>
+	<ul id="messages"></ul>
 	</br>
 	</br>
 	<p>input</p>
-	<textarea id = "clientMsg" name="clientMsg" cols="40" rows="4" value=""></textarea>
+	<textarea id="clientMsg" name="clientMsg" cols="40" rows="4" value=""></textarea>
 	</br>
 	<input type="button" onclick="sendMsgToServer()" value="send" />
-    <script src="socket.io-1.3.7.js"></script>
-    <script src="jquery-1.11.1.js"></script>
-    <script>
+	<script src="socket.io-1.3.7.js"></script>
+	<script src="jquery-1.11.1.js"></script>
+	<script>
       var socket = io("http://localhost:5074",{"transports":['websocket']});
 	  function sendMsgToServer(){
 		let msg = $('#clientMsg').val();
@@ -56,5 +76,6 @@
 		});
 	 
     </script>
-  </body>
+</body>
+
 </html>
